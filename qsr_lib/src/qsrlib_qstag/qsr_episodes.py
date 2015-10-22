@@ -1,6 +1,9 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """ Compute QSR Episodes
     (compresses repeating QSRs into an interval they hold)
+    __author__      = "Paul Duckworth"
+    __copyright__   = "Copyright 2015, University of Leeds"
 """
 from __future__ import print_function
 import copy

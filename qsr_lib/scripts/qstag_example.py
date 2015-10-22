@@ -43,7 +43,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     args.distance_threshold = {"touch":1, "near":3, "medium":5, "far":10}
 
-    qtcbs_qsrs_for = [("o1", "o2"),("o1", "o3")]
+    qtcbs_qsrs_for = [("o1", "o2"),("o1", "o3"),("o2", "o3")]
     argd_qsrs_for = [("o1", "o2")]
     mos_qsrs_for = ["o1", "o2"]
 
@@ -76,22 +76,22 @@ if __name__ == "__main__":
 
 
     o1 = [Object_State(name="o1", timestamp=0, x=2., y=2., object_type="Person"),  #accessed first using try: kwargs["object_type"] except:
-          Object_State(name="o1", timestamp=1, x=1., y=1., object_type="Person")]
-          #Object_State(name="o1", timestamp=2, x=2., y=2., object_type="Human"),
+          Object_State(name="o1", timestamp=1, x=1., y=1., object_type="Person"),
+          Object_State(name="o1", timestamp=2, x=2., y=2., object_type="Human")]
           #Object_State(name="o1", timestamp=3, x=4., y=1., object_type="Human"),
           #Object_State(name="o1", timestamp=4, x=4., y=1., object_type="Human"),
           #Object_State(name="o1", timestamp=5, x=4., y=2., object_type="Human")]
 
     o2 = [Object_State(name="o2", timestamp=0, x=1., y=1., object_type="Chair"),
-          Object_State(name="o2", timestamp=1, x=2., y=2., object_type="Chair")]
-          #Object_State(name="o2", timestamp=2, x=1., y=5., object_type="Chair"),
+          Object_State(name="o2", timestamp=1, x=2., y=2., object_type="Chair"),
+          Object_State(name="o2", timestamp=2, x=1., y=5., object_type="Chair")]
           #Object_State(name="o2", timestamp=3, x=1., y=5., object_type="Chair"),
           #Object_State(name="o2", timestamp=4, x=2., y=5., object_type="Chair"),
           #Object_State(name="o2", timestamp=5, x=2., y=5., object_type="Chair")]
 
     o3 = [Object_State(name="o3", timestamp=0, x=0., y=0., object_type="Desk"),
-          Object_State(name="o3", timestamp=1, x=0., y=0., object_type="Desk")]
-          #Object_State(name="o3", timestamp=2, x=0., y=0., object_type="Desk"),
+          Object_State(name="o3", timestamp=1, x=0., y=0., object_type="Desk"),
+          Object_State(name="o3", timestamp=2, x=0., y=0., object_type="Desk")]
           #Object_State(name="o3", timestamp=3, x=0., y=0., object_type="Desk"),
           #Object_State(name="o3", timestamp=4, x=0., y=0., object_type="Desk"),
           #Object_State(name="o3", timestamp=5, x=0., y=0., object_type="Desk")]

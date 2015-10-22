@@ -1,5 +1,10 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Qualitative Spatio-Temporal Activity Graph module."""
+
+"""Qualitative Spatio-Temporal Activity Graph module
+    __author__      = "Paul Duckworth"
+    __copyright__   = "Copyright 2015, University of Leeds"
+"""
 
 from __future__ import print_function
 import argparse
@@ -11,30 +16,28 @@ from datetime import datetime
 from igraph import Graph
 from itertools import combinations, permutations, product, combinations_with_replacement
 from qsrlib_qstag.qsr_episodes import compute_episodes
+from qsrlib_qstag.qsr_graphlets import compute_graphlets
 
 
 class Activity_Graph():
-    """Activity Graph class.
-
+    '''
+    Activity Graph class:
     Lower level is a set of only nodes of type 'object'. Middle level nodes are only of
     type 'spatial_relation'. Top level nodes are only of type 'temporal_relation'.
     Accepts input file which is a plain text file with each line an interaction of
     a pair of objects.
-
     Header: object1, object1_type, object2, object2_type, spatial relation, start time, end time
 
-    **Example content:**
-
-        * o1,mug,o2,hand,sur,3,7
-        * o1,mug,o3,head,con,4,9
-        * o2,hand,o3,head,dis,1,9
+    Example content:
+    ----------------
+    o1,mug,o2,hand,sur,3,7
+    o1,mug,o3,head,con,4,9
+    o2,hand,o3,head,dis,1,9
 
     OR
 
     Accepts a list of episodes where each episode is a tuple with above structure.
-
-    .. seealso:: For further details, refer to its :doc:`description. <../handwritten/qsrs/qstag>`
-    """
+    '''
 
     #Protect the variables that are not needed from the outside
     def __init__(self, world, world_qsr, object_types={}):
@@ -56,7 +59,9 @@ class Activity_Graph():
         """list: A list of edges connecting the spatial nodes to the temporal nodes."""
         self.__object_types = self.get_objects_types(object_types, world)
         """dict: A dictionary containing the object names, and the generic object typese."""
-        self.graph = self.get_activity_graph(self.__episodes)
+        self.graph = self.get_activity_graph()
+        """igraph.Graph: An igraph graph object containing all the object, spatial and temporal nodes."""
+        self.graphlets = compute_graphlets(self.__episodes)
         """igraph.Graph: An igraph graph object containing all the object, spatial and temporal nodes."""
 
     @property
@@ -148,14 +153,13 @@ class Activity_Graph():
         return temporal_nodes
 
     def get_objects_types(self, objects_types, world):
-        """Generate a dictionary of object name and object type pairs.
+        """Generates a dictionary of object name and object type pairs
+        Using both the dynamic_args dictionary where key = `objects_types`, and the
+        **kwargs value [object_type] in the World Trace object
 
-        It uses both the dynamic_args dictionary where key = `objects_types`, and the
-        `**kwargs` value \[object_type\] in the World Trace object
-
-        :param objects_types: Uses the dynamic_args dictionary  where key = `objects_types` if provided.
-        :type objects_types: dict
-        :param world: Otherwise, looks at the `**kwargs` value \[object_type\] in the World Trace object.
+        :param objects_types: Uses the dynamic_args dictionary  where key = `objects_types` if provided
+        :type objects_types: dictionary
+        :param world: Otherwise, looks at the **kwargs value [object_type] in the World Trace object
         :type world: :class:`World_Trace <qsrlib_io.world_trace>`
         :return: A dictionary with the object name as keys and the generic object type as value.
         :rtype: dict
@@ -206,11 +210,9 @@ class Activity_Graph():
         return (E_s, E_f)
 
 
-    def get_activity_graph(self, episodes):
+    def get_activity_graph(self):
         """Generates the qstag for a set of input episode QSRs.
 
-        :param episodes: list of QSR Epiosdes generated using `compute_episodes(world_qsr)``
-        :type episodes: list
         :return: igraph.Graph: An igraph graph object containing all the object, spatial and temporal nodes.
         :rtype: igraph.Graph
         """
@@ -232,7 +234,7 @@ class Activity_Graph():
         graph = Graph(directed=True)
 
         #print("Looping through the episodes...")
-        for (objs, relations, (intv_start, intv_end)) in episodes:
+        for (objs, relations, (intv_start, intv_end)) in self.__episodes:
             #print(objs, relations, (intv_start, intv_end))
 
 
