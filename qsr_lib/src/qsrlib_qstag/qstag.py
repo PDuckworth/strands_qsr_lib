@@ -38,12 +38,15 @@ class Activity_Graph:
 		"""dict: A dictionary of object names and types."""
 
 		self.graph, self.__spatial_obj_edges, self.__temp_spatial_edges = get_graph(self.__episodes, self.__object_types)
-		"""
-		igraph.Graph: An igraph graph object containing all the object, spatial and temporal nodes.
+		"""igraph.Graph: An igraph graph object containing all the object, spatial and temporal nodes.
 		list: A list of edges connecting the spatial nodes to the object nodes.
 		list: A list of edges connecting the spatial nodes to the temporal nodes."""
 
-		self.graphlets = self.Graphlets(self.__episodes, max_eps=3)
+		min_rows=1
+		max_rows=1
+		max_eps=3
+		params = (min_rows, max_rows, max_eps)
+		self.graphlets = self.Graphlets(self.__episodes, params)
 		"""Graphlets object containing, unique graphlets, hashes and histogram of graphlets."""
 
 
@@ -143,7 +146,8 @@ class Activity_Graph:
 				temporal_nodes.append(node)
 		return temporal_nodes
 
-	def get_objects_types(self, objects_types, world):
+	@staticmethod
+	def get_objects_types(objects_types, world):
 		"""Generates a dictionary of object name and object type pairs
 		Using both the dynamic_args dictionary where key = `objects_types`, and the
 		**kwargs value [object_type] in the World Trace object
@@ -170,7 +174,7 @@ class Activity_Graph:
 		Minimal subgraphs of the same structure as the Activity Graph.
 		'''
 
-		def __init__(self, episodes, max_eps=None, object_types={}):
+		def __init__(self, episodes, params=None, object_types={}):
 			"""Constructor.
 
 			:param episodes:
@@ -178,25 +182,43 @@ class Activity_Graph:
 			:param object_types: dictionary of object name to a generic object type
 			:type object_types: dict
 			"""
+			if params is None:
+				params = (1,1,3)
 
-			self.__graphlets, self.__hashes = graphlet_selections(episodes, max_eps, vis=False)
+			graphlets, hashes = get_graphlet_selections(episodes, params, vis=False)
 
-			#self.__histogram = get_histogram()
+			self.__local_histogram = []
+			self.__local_code_book = []
+			self.__local_graphlets = {}
 
-			for h, g in zip(self.__hashes, self.__graphlets):
-				print("\n", h, ":", g)
-			print("END")
+			for h, g in zip(hashes, graphlets):
 
 
+				if h not in self.__local_code_book:
+					self.__local_code_book.append(h)
+					self.__local_histogram.append(1)
+					self.__local_graphlets[h] = g
+				else:
+					ind = self.__local_code_book.index(h)
+					self.__local_histogram[ind] += 1
+
+				#print("\n", h, ":", g)
+				#print(self.__local_histogram)
+
+			print("number of graphlets in total: ", len(graphlets), len(hashes))
+			print("local histogram: ", self.__local_histogram)
+			#print(self.__local_code_book)
+			#print(self.__local_graphlets)
 			sys.exit(1)
 
 
-def graphlet_selections(episodes, max_eps=None, vis=False):
+def get_graphlet_selections(episodes, params, vis=False):
 	""" This function implements Krishna's validity criteria to select all valid
 	graphlets from an activity graph: see Sridar_AAAI_2010 for more details.
 	"""
 
 	print("Computing episode combinations...")
+	min_rows, max_rows, max_eps = params
 	if vis: print("num of episodes:", len(episodes))
 	if vis: print("all episodes: ", episodes)
 	episode_ids = {}
@@ -220,9 +242,6 @@ def graphlet_selections(episodes, max_eps=None, vis=False):
 	if vis: print("\nintervals: ", intervals)
 
 	hashed_IDs = {}
-	min_rows = 1
-	max_rows = 2
-
 	range_of_rows = range(min_rows, max_rows+1)
 
 	for r in range_of_rows:
@@ -274,22 +293,24 @@ def graphlet_selections(episodes, max_eps=None, vis=False):
 	if vis: print("\nepisode combinations:", hashed_IDs)
 
 	# Replace the ID codes with the episodes
-	episodes_selection = {}
+	#episodes_selection = {}
 	list_of_graphlets = []
 	list_of_graphlet_hashes = []
+
 	for objs, IDs in hashed_IDs.items():
-		episodes_selection[objs] = []
+		#episodes_selection[objs] = []
 
 		for hash_, id_codes in IDs.items():
 			eps = [episode_ids[epi_code] for epi_code in id_codes]
 
-			#Remove graphlets that have only one spatial relation - i.e. no temporal relation
+			# Remove graphlets that have only one spatial relation - i.e. no temporal relation
 			#if len(eps) <= 1: continue
 			if len(eps) <= max_eps:
-				episodes_selection[objs].append(eps)
+				#episodes_selection[objs].append(eps)
 				graph, spatial_obj_edges, temp_spatial_edges = get_graph(eps)
 				list_of_graphlets.append(graph)
 				list_of_graphlet_hashes.append(utils.graph_hash(graph))
+
 				if vis:
 					print("\nEPS= ", eps)
 					print(graph)
