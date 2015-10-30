@@ -47,7 +47,7 @@ def compute_episodes(world_qsr):
 				episodes.append( (objects, epi_rel, (epi_start, epi_end)) )
 				epi_start = epi_end = frame
 				epi_rel = rel
-		episodes.append( (objects, epi_rel, (epi_start, epi_end)) )
+		episodes.append((objects, epi_rel, (epi_start, epi_end)))
 	return episodes
 
 

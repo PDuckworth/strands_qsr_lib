@@ -45,7 +45,7 @@ class Activity_Graph:
 		min_rows=1
 		max_rows=1
 		max_eps=3
-		params = (min_rows, max_rows, max_eps)
+		params = {"min_rows" : min_rows, "max_rows" : max_rows, "max_eps" : max_eps}
 		self.graphlets = self.Graphlets(self.__episodes, params)
 		"""Graphlets object containing, unique graphlets, hashes and histogram of graphlets."""
 
@@ -177,13 +177,15 @@ class Activity_Graph:
 		def __init__(self, episodes, params=None, object_types={}):
 			"""Constructor.
 
-			:param episodes:
-			:type episodes:
+			:param episodes: list of QSR episodes, each a tuple of the form: ([objects], {epi_rel}, (epi_start, epi_end))
+			:type episodes: list
+			:param params: dictionary of parameters: minimum rows, maximum rows, maximum episodes used for graphlets
+			:type params: dict
 			:param object_types: dictionary of object name to a generic object type
 			:type object_types: dict
 			"""
 			if params is None:
-				params = (1,1,3)
+				params = {"min_rows":1, "max_rows":1, "max_eps":3}
 
 			graphlets, hashes = get_graphlet_selections(episodes, params, vis=False)
 
@@ -192,7 +194,6 @@ class Activity_Graph:
 			self.__local_graphlets = {}
 
 			for h, g in zip(hashes, graphlets):
-
 
 				if h not in self.__local_code_book:
 					self.__local_code_book.append(h)
@@ -218,7 +219,7 @@ def get_graphlet_selections(episodes, params, vis=False):
 	"""
 
 	print("Computing episode combinations...")
-	min_rows, max_rows, max_eps = params
+	#min_rows, max_rows, max_eps = params
 	if vis: print("num of episodes:", len(episodes))
 	if vis: print("all episodes: ", episodes)
 	episode_ids = {}
@@ -242,7 +243,7 @@ def get_graphlet_selections(episodes, params, vis=False):
 	if vis: print("\nintervals: ", intervals)
 
 	hashed_IDs = {}
-	range_of_rows = range(min_rows, max_rows+1)
+	range_of_rows = range(params["min_rows"], params["max_rows"]+1)
 
 	for r in range_of_rows:
 		# Once we select the number of rows, find all combinations of rows of r.
@@ -305,7 +306,7 @@ def get_graphlet_selections(episodes, params, vis=False):
 
 			# Remove graphlets that have only one spatial relation - i.e. no temporal relation
 			#if len(eps) <= 1: continue
-			if len(eps) <= max_eps:
+			if len(eps) <= params["max_eps"]:
 				#episodes_selection[objs].append(eps)
 				graph, spatial_obj_edges, temp_spatial_edges = get_graph(eps)
 				list_of_graphlets.append(graph)
