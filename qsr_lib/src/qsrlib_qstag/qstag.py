@@ -206,12 +206,6 @@ class Activity_Graph:
 				#print("\n", h, ":", g)
 				#print(self.__local_histogram)
 
-			print("number of graphlets in total: ", len(graphlets), len(hashes))
-			print("local histogram: ", self.__local_histogram)
-			#print(self.__local_code_book)
-			#print(self.__local_graphlets)
-			sys.exit(1)
-
 
 def get_graphlet_selections(episodes, params, vis=False):
 	""" This function implements Krishna's validity criteria to select all valid
