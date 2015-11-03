@@ -209,22 +209,22 @@ class Activity_Graph:
 			graphlets, hashes = get_graphlet_selections(episodes, params, vis=False)
 			"""lists: Two lists of all graphlets and hashes in Activity_Graph."""
 
-			self.local_histogram = []
+			self._local_histogram = []
 			"""list: The list of graphlet counts (zip with local_codebook for a hash of each, and check local_graphlets for the iGraph)."""
-			self.local_code_book = []
+			self._local_code_book = []
 			"""list: The list of graphlet hashes (zip with local_histogram for count of each)."""
-			self.local_graphlets = {}
+			self._local_graphlets = {}
 			"""dict: dictionary of the graphlet hash as key, and the iGraph object as value."""
 
 			for h, g in zip(hashes, graphlets):
 
-				if h not in self.local_code_book:
-					self.local_code_book.append(h)
-					self.local_histogram.append(1)
-					self.local_graphlets[h] = g
+				if h not in self._local_code_book:
+					self._local_code_book.append(h)
+					self._local_histogram.append(1)
+					self._local_graphlets[h] = g
 				else:
-					ind = self.local_code_book.index(h)
-					self.local_histogram[ind] += 1
+					ind = self._local_code_book.index(h)
+					self._local_histogram[ind] += 1
 
 
 def get_graphlet_selections(episodes, params, vis=False):

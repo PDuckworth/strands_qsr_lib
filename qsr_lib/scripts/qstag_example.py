@@ -145,11 +145,11 @@ if __name__ == "__main__":
 	#	print(edge)
 
 	"""PRINT GRAPHLETS"""
-	print("\nnumber of unique graphlets in total: ", sum(qstag.graphlets.local_histogram))
-	print("\nhistogram: \n", qstag.graphlets.local_histogram, "\n len:", len(qstag.graphlets.local_histogram))
-	print("\ncode book: \n", qstag.graphlets.local_code_book, "\n len:", len(qstag.graphlets.local_code_book))
-	print("\ngraphlets: \n", qstag.graphlets.local_graphlets)
+	print("\nnumber of unique graphlets in total: ", sum(qstag.graphlets._local_histogram))
+	print("\nhistogram: \n", qstag.graphlets._local_histogram, "\n len:", len(qstag.graphlets._local_histogram))
+	print("\ncode book: \n", qstag.graphlets._local_code_book, "\n len:", len(qstag.graphlets._local_code_book))
+	print("\ngraphlets: \n", qstag.graphlets._local_graphlets)
 
 	print("\nMost common graphlet: ")
-	pos = np.argmax(qstag.graphlets.local_histogram)
-	print(qstag.graphlets.local_graphlets[qstag.graphlets.local_code_book[pos]])
+	pos = np.argmax(qstag.graphlets._local_histogram)
+	print(qstag.graphlets._local_graphlets[qstag.graphlets._local_code_book[pos]])
