@@ -207,10 +207,14 @@ class Activity_Graph:
 				params = {"min_rows":1, "max_rows":1, "max_eps":3}
 
 			graphlets, hashes = get_graphlet_selections(episodes, params, vis=False)
+			"""lists: Two lists of all graphlets and hashes in Activity_Graph."""
 
 			self.local_histogram = []
+			"""list: The list of graphlet counts (zip with local_codebook for a hash of each, and check local_graphlets for the iGraph)."""
 			self.local_code_book = []
+			"""list: The list of graphlet hashes (zip with local_histogram for count of each)."""
 			self.local_graphlets = {}
+			"""dict: dictionary of the graphlet hash as key, and the iGraph object as value."""
 
 			for h, g in zip(hashes, graphlets):
 
@@ -221,10 +225,6 @@ class Activity_Graph:
 				else:
 					ind = self.local_code_book.index(h)
 					self.local_histogram[ind] += 1
-
-				#print("\n", h, ":", g)
-				#print(self.__local_histogram)
-
 
 
 def get_graphlet_selections(episodes, params, vis=False):
