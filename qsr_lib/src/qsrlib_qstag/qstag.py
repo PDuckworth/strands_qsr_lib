@@ -60,35 +60,22 @@ class Activity_Graph:
 		return self.__episodes
 
 	@property
-	def histogram(self):
+	def spatial_obj_edges(self):
 		"""Getter.
 
-		:return: `self.__histogram`
-		:rtype: dict
+		:return: `self.__spatial_obj_edges`
+		:rtype: list
 		"""
-		return {k: v for k, v in zip(self.__hashes, self.__histogram)}
+		return self.__spatial_obj_edges
 
 	@property
-	def abstract_graph(self):
+	def temp_spatial_edges(self):
 		"""Getter.
 
-		:return: `self.abstract_graph`
-		:rtype: igraph.Graph
+		:return: `self.__temp_spatial_edges`
+		:rtype: list
 		"""
-		#abstract_graph = Graph.copy(self.graph)
-		abstract_graph = self
-
-		for o_node in self.object_nodes:
-			#Activity Graph code:
-
-			#Set the name of the object node equal to the type.
-			o_node['name']=o_node['obj_type']
-
-			#to remove object node type and name:
-			"""o_node['obj_type'] = 'Unknown'
-			o_node['name']='Unknown_object'
-			"""
-		return abstract_graph
+		return self.__temp_spatial_edges
 
 	@property
 	def object_nodes(self):
@@ -146,6 +133,38 @@ class Activity_Graph:
 				temporal_nodes.append(node)
 		return temporal_nodes
 
+	@property
+	def histogram(self):
+		"""Getter.
+
+		:return: `self.__histogram`
+		:rtype: dict
+		"""
+		return {k: v for k, v in zip(self.__hashes, self.__histogram)}
+
+	@property
+	def abstract_graph(self):
+		"""Getter.
+
+		:return: `self.abstract_graph`
+		:rtype: igraph.Graph
+		"""
+		#abstract_graph = Graph.copy(self.graph)
+		abstract_graph = self
+
+		for o_node in self.object_nodes:
+			#Activity Graph code:
+
+			#Set the name of the object node equal to the type.
+			o_node['name']=o_node['obj_type']
+
+			#to remove object node type and name:
+			"""o_node['obj_type'] = 'Unknown'
+			o_node['name']='Unknown_object'
+			"""
+		return abstract_graph
+
+
 	@staticmethod
 	def get_objects_types(objects_types, world):
 		"""Generates a dictionary of object name and object type pairs
@@ -189,22 +208,23 @@ class Activity_Graph:
 
 			graphlets, hashes = get_graphlet_selections(episodes, params, vis=False)
 
-			self.__local_histogram = []
-			self.__local_code_book = []
-			self.__local_graphlets = {}
+			self.local_histogram = []
+			self.local_code_book = []
+			self.local_graphlets = {}
 
 			for h, g in zip(hashes, graphlets):
 
-				if h not in self.__local_code_book:
-					self.__local_code_book.append(h)
-					self.__local_histogram.append(1)
-					self.__local_graphlets[h] = g
+				if h not in self.local_code_book:
+					self.local_code_book.append(h)
+					self.local_histogram.append(1)
+					self.local_graphlets[h] = g
 				else:
-					ind = self.__local_code_book.index(h)
-					self.__local_histogram[ind] += 1
+					ind = self.local_code_book.index(h)
+					self.local_histogram[ind] += 1
 
 				#print("\n", h, ":", g)
 				#print(self.__local_histogram)
+
 
 
 def get_graphlet_selections(episodes, params, vis=False):

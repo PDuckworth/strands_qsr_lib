@@ -234,6 +234,8 @@ def get_temporal_chords_from_episodes(episodes):
 def graph2dot(graph, out_dot_file):
 	"""To visualize the iGraph graph, this prints a dot file to the file location given
 
+	:param graph: Activity Graph object (QSTAG)
+	:type graph: Activity_Graph type
 	:param out_dot_file: file location to save the dot file
 	:type out_dot_file: string
 	"""
@@ -274,11 +276,11 @@ def graph2dot(graph, out_dot_file):
 	dot_file.write('}\n')
 
 	# Create temporal to spatial edges
-	for t_edge in graph.__temp_spatial_edges:
+	for t_edge in graph.temp_spatial_edges:
 		dot_file.write('%s -> %s [arrowhead = "normal", color="red"];\n' %(t_edge[0], t_edge[1]))
 
 	# Create spatial to object edges
-	for r_edge in graph.__spatial_obj_edges:
+	for r_edge in graph.spatial_obj_edges:
 		dot_file.write('%s -> %s [arrowhead = "normal", color="red"];\n' %(r_edge[0], r_edge[1]))
 	dot_file.write('}\n')
 	dot_file.close()
