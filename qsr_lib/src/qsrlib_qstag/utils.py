@@ -166,34 +166,6 @@ def graph_hash(G, node_name_attribute='name', edge_name_attribute=None):
 	edge_hashes_string = ':'.join([repr(i) for i in edge_hashes])
 	return hash(edge_hashes_string)
 
-def f(episodes, params, obj_type):
-
-	graphlet_hash_cnts={}
-	valid_graphlets={}
-
-	window, list_of_graphlets = episodes
-	valid_graphlets[window]={}
-	valid_graphlets_cnts = {}
-
-	for single_graphlet in list_of_graphlets:
-		act_graphlets = episodes_to_activity_graph(single_graphlet, params, obj_type)
-		(ghash, g) = get_graph_hash(act_graphlets)
-
-		if ghash in valid_graphlets_cnts:
-			#This adds one to the graph hash (graphlet) count
-			cnt = valid_graphlets_cnts[ghash]
-			cnt += 1
-			valid_graphlets_cnts[ghash] = cnt
-		else:
-			#This adds the graph hash to the graphlet list
-			valid_graphlets_cnts[ghash] = 1
-
-			#These are the actual iGraph graphlets:
-			valid_graphlets[window][ghash] = g
-
-	graphlet_hash_cnts[window] = valid_graphlets_cnts
-	return (graphlet_hash_cnts, valid_graphlets)
-
 def get_temporal_chords_from_episodes(episodes):
 	interval_data = {}
 	interval_breaks = []
