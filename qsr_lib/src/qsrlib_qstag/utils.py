@@ -6,10 +6,15 @@
 """
 from __future__ import print_function
 from itertools import combinations, permutations
-import copy
+import copy, sys
 from igraph import Graph as iGraph
+import numpy as np
+import pandas as pd
 
-def compute_episodes(world_qsr):
+
+
+
+def compute_episodes(world_qsr, NOISE_THRESHOLD):
 	"""
 	Compute QSR Episodes from a QSRLib.QSR_World_Trace object.
 	QSR Episodes compresses repeating QSRs into a temporal interval over which they hold.
@@ -30,12 +35,14 @@ def compute_episodes(world_qsr):
 	episodes = []
 	obj_based_qsr_world = {}
 	frames = world_qsr.get_sorted_timestamps()
+
 	for frame in frames:
 		for objs, qsrs in world_qsr.trace[frame].qsrs.items():
 			if objs not in obj_based_qsr_world: obj_based_qsr_world[objs] = []
 			obj_based_qsr_world[objs].append((frame, qsrs.qsr))
 
 	for objs, frame_tuples in obj_based_qsr_world.items():
+
 		epi_start, epi_rel = frame_tuples[0]
 		epi_end  = copy.copy(epi_start)
 
@@ -48,7 +55,76 @@ def compute_episodes(world_qsr):
 				epi_start = epi_end = frame
 				epi_rel = rel
 		episodes.append((objects, epi_rel, (epi_start, epi_end)))
+
+	print(len(episodes))
+	for i in episodes:
+		print(i)
+	sys.exit(1)
 	return episodes
+
+
+def filter_intervals(intv_list_dup, noise_threshold):
+	intv_list = intv_list_dup[:]
+	filtered_intv_list = []
+	next_relation_threshold = noise_threshold
+
+	newf = None
+	obj_ids = 0
+	qsrs = 1
+	interval = 2
+
+
+
+	obj1_id   = 0
+	obj1_type = 1
+	obj2_id   = 2
+	obj2_type = 3
+	rel	   = 4
+	start	 = 5
+	e		 = 6
+	for cnt,f in enumerate(intv_list):
+		print(cnt, f, f[2][1]-f[2][0])
+
+	sys.exit(1)
+	for f in intv_list:
+		print("f = ", f)
+		start = f[interval][0]
+		end = f[interval][1]
+		rels = [i for i in f[qsrs].values()]
+
+		print("rels: ", rels)
+		print(start, end)
+
+		#PD: This doesn't check whether the first f is below the threshold value
+		if newf is None:
+			newf = list(f[:])
+			newf_rels = rels
+
+		elif newf_rels == rels:
+			# both intervals have same relations, just merge
+			newf[interval] = (newf[interval][0], end)
+		else:
+			# intervals have different relations
+			if end - start < next_relation_threshold:
+				# interval of relation is too small, so merge with previous one
+				#print("1.", newf)
+				newf[interval] = (newf[interval][0], end)
+				#print("2.", newf)
+			else:
+				# This interval is reasonably big, so don't merge it.
+				filtered_intv_list.append(tuple(newf))
+				newf = list(f[:])
+	else:
+		# Reached the end of list. so finish by adding the last interval (newf not f)
+		filtered_intv_list.append(tuple(newf))
+
+	#remove first episode if < threshold in duration.
+	#ToDo: why not merge the (small) first episode onto the (longer) second episode
+	if len(filtered_intv_list) > 1 and \
+		filtered_intv_list[0][e]-filtered_intv_list[0][start] < noise_threshold:
+		filtered_intv_list.pop(0)
+	return filtered_intv_list
+
 
 
 def get_E_set(objects, spatial_data):
@@ -217,32 +293,32 @@ def graph2dot(graph, out_dot_file):
 	# dot -Tpng input.dot -o output.png
 	dot_file = open(out_dot_file, 'w')
 	dot_file.write('digraph activity_graph {\n')
-	dot_file.write('    size = "45,45";\n')
-	dot_file.write('    node [fontsize = "18", shape = "box", style="filled", fillcolor="aquamarine"];\n')
-	dot_file.write('    ranksep=5;\n')
+	dot_file.write('	size = "45,45";\n')
+	dot_file.write('	node [fontsize = "18", shape = "box", style="filled", fillcolor="aquamarine"];\n')
+	dot_file.write('	ranksep=5;\n')
 	# Create temporal nodes
-	dot_file.write('    subgraph _1 {\n')
-	dot_file.write('    rank="source";\n')
+	dot_file.write('	subgraph _1 {\n')
+	dot_file.write('	rank="source";\n')
 
 	#print(graph.temporal_nodes)
 	#print(graph.spatial_nodes)
 	#print(graph.object_nodes)
 
 	for tnode in graph.temporal_nodes:
-		dot_file.write('    %s [fillcolor="white", label="%s", shape=ellipse];\n' %(tnode.index, tnode['name']))
+		dot_file.write('	%s [fillcolor="white", label="%s", shape=ellipse];\n' %(tnode.index, tnode['name']))
 
 	dot_file.write('}\n')
 
 	# Create spatial nodes
-	dot_file.write('    subgraph _2 {\n')
-	dot_file.write('    rank="same";\n')
+	dot_file.write('	subgraph _2 {\n')
+	dot_file.write('	rank="same";\n')
 	for rnode in graph.spatial_nodes:
-		dot_file.write('    %s [fillcolor="lightblue", label="%s"];\n' %(rnode.index, rnode['name']))
+		dot_file.write('	%s [fillcolor="lightblue", label="%s"];\n' %(rnode.index, rnode['name']))
 	dot_file.write('}\n')
 
 	# Create object nodes
-	dot_file.write('    subgraph _3 {\n')
-	dot_file.write('    rank="sink";\n')
+	dot_file.write('	subgraph _3 {\n')
+	dot_file.write('	rank="sink";\n')
 	for onode in graph.object_nodes:
 		dot_file.write('%s [fillcolor="tan1", label="%s"];\n' %(onode.index, onode['name']))
 	dot_file.write('}\n')
@@ -256,4 +332,3 @@ def graph2dot(graph, out_dot_file):
 		dot_file.write('%s -> %s [arrowhead = "normal", color="red"];\n' %(r_edge[0], r_edge[1]))
 	dot_file.write('}\n')
 	dot_file.close()
-

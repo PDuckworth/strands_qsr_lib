@@ -20,7 +20,7 @@ class Activity_Graph:
 
 	Accepts a QSRLib.World_Trace and QSRLib.QSR_World_Trace as input.
 	"""
-	def __init__(self, world, world_qsr, object_types={}):
+	def __init__(self, world, world_qsr, object_types={}, noise_threshold=3):
 		"""Constructor.
 
 		:param world: The World Trace object
@@ -30,8 +30,7 @@ class Activity_Graph:
 		:param object_types: dictionary of object name to a generic object type
 		:type object_types: dict
 		"""
-
-		self.__episodes = utils.compute_episodes(world_qsr)
+		self.__episodes = utils.compute_episodes(world_qsr, noise_threshold)
 		"""list: The list of QSR Episodes used to generate the QSTAG."""
 
 		self.__object_types = self.get_objects_types(object_types, world)
@@ -230,6 +229,16 @@ class Activity_Graph:
 def get_graphlet_selections(episodes, params, vis=False):
 	""" This function implements Krishna's validity criteria to select all valid
 	graphlets from an activity graph: see Sridar_AAAI_2010 for more details.
+
+	:param episodes: list of episodes, where one episode = [[obj_list], {QSR dict}, (start, end_tuple)]
+	:type episodes: list
+	:param params: a dictionary containing parameters for the generation of the QSTAG. i.e.  "min_rows", "max_rows", "max_eps"
+	:type params: dict
+
+	:return list_of_graphlets: a list of iGraph graphlet objects
+	:rtype: list
+	:return list_of_graphlet_hashes: a list of hashes, relating to the graphlets
+	:rtype: list
 	"""
 
 	print("Computing episode combinations...")
@@ -336,6 +345,11 @@ def get_graphlet_selections(episodes, params, vis=False):
 
 def get_graph(episodes, object_types={}):
 	"""Generates a graph from a set of input episode QSRs.
+
+	:param episodes: list of episodes, where one episode = [[obj_list], {QSR dict}, (start, end_tuple)]
+	:type episodes: list
+	:param object_types: a dictionary of object ID and object type.
+	:type object_types: dict
 
 	:return: igraph.Graph: An igraph graph object containing all the object, spatial and temporal nodes.
 	:rtype: igraph.Graph
