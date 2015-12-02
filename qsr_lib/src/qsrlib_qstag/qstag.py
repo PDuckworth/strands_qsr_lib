@@ -20,7 +20,7 @@ class Activity_Graph:
 
 	Accepts a QSRLib.World_Trace and QSRLib.QSR_World_Trace as input.
 	"""
-	def __init__(self, world, world_qsr, object_types={}, noise_threshold=3):
+	def __init__(self, world, world_qsr, object_types={}, params={} noise_threshold=3):
 		"""Constructor.
 
 		:param world: The World Trace object
@@ -41,10 +41,9 @@ class Activity_Graph:
 		list: A list of edges connecting the spatial nodes to the object nodes.
 		list: A list of edges connecting the spatial nodes to the temporal nodes."""
 
-		min_rows=1
-		max_rows=1
-		max_eps=3
-		params = {"min_rows" : min_rows, "max_rows" : max_rows, "max_eps" : max_eps}
+		if not isinstance(params["max_eps"], int):
+		 	raise RuntimeError("params needs to contain a dictionary of Graphlet parameters. i.e. max_eps, and min/max_rows.")
+
 		self.graphlets = self.Graphlets(self.__episodes, params)
 		"""Graphlets object containing, unique graphlets, hashes and histogram of graphlets."""
 
@@ -205,25 +204,25 @@ class Activity_Graph:
 			if params is None:
 				params = {"min_rows":1, "max_rows":1, "max_eps":3}
 
-			graphlets, hashes = get_graphlet_selections(episodes, params, vis=False)
+			all_graphlets, hashes = get_graphlet_selections(episodes, params, vis=False)
 			"""lists: Two lists of all graphlets and hashes in Activity_Graph."""
 
-			self._local_histogram = []
-			"""list: The list of graphlet counts (zip with local_codebook for a hash of each, and check local_graphlets for the iGraph)."""
-			self._local_code_book = []
-			"""list: The list of graphlet hashes (zip with local_histogram for count of each)."""
-			self._local_graphlets = {}
+			self.histogram = []
+			"""list: The list of graphlet counts (zip with codebook for a hash of each, and check graphlets for the iGraph)."""
+			self.code_book = []
+			"""list: The list of graphlet hashes (zip with histogram for count of each)."""
+			self.graphlets = {}
 			"""dict: dictionary of the graphlet hash as key, and the iGraph object as value."""
 
-			for h, g in zip(hashes, graphlets):
+			for h, g in zip(hashes, all_graphlets):
 
-				if h not in self._local_code_book:
-					self._local_code_book.append(h)
-					self._local_histogram.append(1)
-					self._local_graphlets[h] = g
+				if h not in self.code_book:
+					self.code_book.append(h)
+					self.histogram.append(1)
+					self.graphlets[h] = g
 				else:
-					ind = self._local_code_book.index(h)
-					self._local_histogram[ind] += 1
+					ind = self.code_book.index(h)
+					self.histogram[ind] += 1
 
 
 def get_graphlet_selections(episodes, params, vis=False):
@@ -241,7 +240,6 @@ def get_graphlet_selections(episodes, params, vis=False):
 	:rtype: list
 	"""
 
-	print("Computing episode combinations...")
 	#min_rows, max_rows, max_eps = params
 	if vis: print("num of episodes:", len(episodes))
 	if vis: print("all episodes: ", episodes)

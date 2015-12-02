@@ -10,7 +10,7 @@ import copy, sys
 from igraph import Graph as iGraph
 import numpy as np
 import pandas as pd
-
+import warnings
 
 
 
@@ -47,7 +47,7 @@ def compute_episodes(world_qsr, NOISE_THRESHOLD):
 		epi_end  = copy.copy(epi_start)
 
 		objects = objs.split(',')
-		for (frame, rel) in obj_based_qsr_world[objs]:
+		for (frame, rel) in frame_tuples:
 			if rel == epi_rel:
 				epi_end = frame
 			else:
@@ -55,77 +55,7 @@ def compute_episodes(world_qsr, NOISE_THRESHOLD):
 				epi_start = epi_end = frame
 				epi_rel = rel
 		episodes.append((objects, epi_rel, (epi_start, epi_end)))
-
-	print(len(episodes))
-	for i in episodes:
-		print(i)
-	sys.exit(1)
 	return episodes
-
-
-def filter_intervals(intv_list_dup, noise_threshold):
-	intv_list = intv_list_dup[:]
-	filtered_intv_list = []
-	next_relation_threshold = noise_threshold
-
-	newf = None
-	obj_ids = 0
-	qsrs = 1
-	interval = 2
-
-
-
-	obj1_id   = 0
-	obj1_type = 1
-	obj2_id   = 2
-	obj2_type = 3
-	rel	   = 4
-	start	 = 5
-	e		 = 6
-	for cnt,f in enumerate(intv_list):
-		print(cnt, f, f[2][1]-f[2][0])
-
-	sys.exit(1)
-	for f in intv_list:
-		print("f = ", f)
-		start = f[interval][0]
-		end = f[interval][1]
-		rels = [i for i in f[qsrs].values()]
-
-		print("rels: ", rels)
-		print(start, end)
-
-		#PD: This doesn't check whether the first f is below the threshold value
-		if newf is None:
-			newf = list(f[:])
-			newf_rels = rels
-
-		elif newf_rels == rels:
-			# both intervals have same relations, just merge
-			newf[interval] = (newf[interval][0], end)
-		else:
-			# intervals have different relations
-			if end - start < next_relation_threshold:
-				# interval of relation is too small, so merge with previous one
-				#print("1.", newf)
-				newf[interval] = (newf[interval][0], end)
-				#print("2.", newf)
-			else:
-				# This interval is reasonably big, so don't merge it.
-				filtered_intv_list.append(tuple(newf))
-				newf = list(f[:])
-	else:
-		# Reached the end of list. so finish by adding the last interval (newf not f)
-		filtered_intv_list.append(tuple(newf))
-
-	#remove first episode if < threshold in duration.
-	#ToDo: why not merge the (small) first episode onto the (longer) second episode
-	if len(filtered_intv_list) > 1 and \
-		filtered_intv_list[0][e]-filtered_intv_list[0][start] < noise_threshold:
-		filtered_intv_list.pop(0)
-	return filtered_intv_list
-
-
 
 def get_E_set(objects, spatial_data):
 	"""Returns the Starting episode set (E_s) and the Endding episode set (E_s)
@@ -217,7 +147,7 @@ def graph_hash(G, node_name_attribute='name', edge_name_attribute=None):
 	"""
 
 	# suppress Runtime Warnings regarding not being able to find a path through the graphs
-	# warnings.filterwarnings('ignore')
+	warnings.filterwarnings('ignore')
 
 	for node in G.vs:
 		paths = G.get_shortest_paths(node)
@@ -231,7 +161,7 @@ def graph_hash(G, node_name_attribute='name', edge_name_attribute=None):
 		node_hashes.sort()
 		node_hashes_string = ':'.join([repr(i) for i in node_hashes])
 		node['hash_name'] = hash(node_hashes_string)
-	# warnings.filterwarnings('always')
+	warnings.filterwarnings('always')
 	if edge_name_attribute:
 		edge_hashes = [(G.vs[edge.source]['hash_name'], G.vs[edge.target]['hash_name'],\
 								   edge[edge_name_attribute]) for edge in G.es]
@@ -243,6 +173,14 @@ def graph_hash(G, node_name_attribute='name', edge_name_attribute=None):
 	return hash(edge_hashes_string)
 
 def get_temporal_chords_from_episodes(episodes):
+	"""
+	Function returns temporal chords from a subset of episodes
+
+	:param episodes: a list of episodes, where one epiode has the format (start_frame, end_frame, id)
+	:type episodes: list
+	:return: list of chords
+	:rtype: list
+	"""
 	interval_data = {}
 	interval_breaks = []
 	# For each time point in the combined interval, get the state of the
