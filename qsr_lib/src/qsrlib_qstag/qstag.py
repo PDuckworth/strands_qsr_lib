@@ -20,7 +20,7 @@ class Activity_Graph:
 
 	Accepts a QSRLib.World_Trace and QSRLib.QSR_World_Trace as input.
 	"""
-	def __init__(self, world, world_qsr, object_types={}, params={} noise_threshold=3):
+	def __init__(self, world, world_qsr, object_types={}, params={}, noise_threshold=3):
 		"""Constructor.
 
 		:param world: The World Trace object

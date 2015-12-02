@@ -179,7 +179,7 @@ class QSRlib(object):
         if "qstag" in req_msg.dynamic_args:
             activity_graph = Activity_Graph(req_msg.input_data, world_qsr_trace, \
                             req_msg.dynamic_args["qstag"]["object_types"] if "object_types" in req_msg.dynamic_args["qstag"] else {},
-                            req_msg.dynamic_args["qstag"]["object_types"] if "object_types" in req_msg.dynamic_args["qstag"] else {})
+                            req_msg.dynamic_args["qstag"]["params"] if "params" in req_msg.dynamic_args["qstag"] else {})
 
         qsrlib_response = QSRlib_Response_Message(qsrs=world_qsr_trace,
                                                   qstag=activity_graph,
