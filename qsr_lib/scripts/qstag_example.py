@@ -15,7 +15,7 @@ def pretty_print_world_qsr_trace(which_qsr, qsrlib_response_message):
 		  + " and received at " + str(qsrlib_response_message.req_received_at)
 		  + " and finished at " + str(qsrlib_response_message.req_finished_at))
 	print("---")
-	print(qsrlib_response_message.qsrs.get_sorted_timestamps())
+	print("timestamps:", qsrlib_response_message.qsrs.get_sorted_timestamps())
 	print("Response is:")
 	for t in qsrlib_response_message.qsrs.get_sorted_timestamps():
 		foo = str(t) + ": "
@@ -73,7 +73,11 @@ if __name__ == "__main__":
 
 					"mos": {"qsrs_for": mos_qsrs_for},
 
-					"qstag": {"object_types" : object_types} }
+                    "qstag": {"object_types" : object_types,
+                              "params" : {"min_rows" : 1, "max_rows" : 1, "max_eps" : 3}}
+
+                    #"filters": {"median_filter" : {"window": 2}}
+					}
 
 	o1 = [Object_State(name="o1", timestamp=0, x=2., y=2., object_type="Person"),  #accessed first using try: kwargs["object_type"] except:
 		  Object_State(name="o1", timestamp=1, x=1., y=1., object_type="Person"),
@@ -120,36 +124,20 @@ if __name__ == "__main__":
 
 	pretty_print_world_qsr_trace(which_qsr, qsrlib_response_message)
 
-	#params={'MAX_ROWS':1, 'MIN_ROWS':None, 'MAX_EPI':4, 'num_cores':8}
 	qstag = qsrlib_response_message.qstag
 
-	print("Episodes...")
-	for i in qstag.episodes:
-		print(i)
-
-	"""PRINT THE GRAPH"""
-
+	"""PRINT THE GRAPH TO FILE"""
 	#print("QSTAG Graph:\n", qstag.graph)
 	utils.graph2dot(qstag, "/tmp/graph.dot")
 	os.system('dot -Tpng /tmp/graph.dot -o /tmp/graph.png')
 
-	print("Object Nodes:")
-	for node in qstag.object_nodes:
-		print(node)
+	print("Episodes:")
+	for i in qstag.episodes:
+		print(i)
 
-	#for node in qstag.spatial_nodes:
-	#	print(node)
+	print("\n,Graphlets:")
+	for i, j in qstag.graphlets.graphlets.items():
+		print("\n", j)
 
-	#print("object Edges:")
-	#for edge in qstag.spatial_obj_edges:
-	#	print(edge)
-
-	"""PRINT GRAPHLETS"""
-	print("\nnumber of unique graphlets in total: ", sum(qstag.graphlets._local_histogram))
-	print("\nhistogram: \n", qstag.graphlets._local_histogram, "\n len:", len(qstag.graphlets._local_histogram))
-	print("\ncode book: \n", qstag.graphlets._local_code_book, "\n len:", len(qstag.graphlets._local_code_book))
-	print("\ngraphlets: \n", qstag.graphlets._local_graphlets)
-
-	print("\nMost common graphlet: ")
-	pos = np.argmax(qstag.graphlets._local_histogram)
-	print(qstag.graphlets._local_graphlets[qstag.graphlets._local_code_book[pos]])
+	print("\nHistogram of Graphlets:")
+	print(qstag.graphlets.histogram)

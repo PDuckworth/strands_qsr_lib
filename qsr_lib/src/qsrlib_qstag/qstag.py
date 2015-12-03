@@ -191,7 +191,7 @@ class Activity_Graph:
 		Minimal subgraphs of the same structure as the Activity Graph.
 		'''
 
-		def __init__(self, episodes, params=None, object_types={}):
+		def __init__(self, episodes, params, object_types={}):
 			"""Constructor.
 
 			:param episodes: list of QSR episodes, each a tuple of the form: ([objects], {epi_rel}, (epi_start, epi_end))
@@ -201,7 +201,9 @@ class Activity_Graph:
 			:param object_types: dictionary of object name to a generic object type
 			:type object_types: dict
 			"""
-			if params is None:
+			try:
+				max_eps = params["max_eps"]
+			except KeyError:
 				params = {"min_rows":1, "max_rows":1, "max_eps":3}
 
 			all_graphlets, hashes = get_graphlet_selections(episodes, params, vis=False)
@@ -226,7 +228,7 @@ class Activity_Graph:
 
 
 def get_graphlet_selections(episodes, params, vis=False):
-	""" This function implements Krishna's validity criteria to select all valid
+	""" This function implements Sridar's validity criteria to select all valid
 	graphlets from an activity graph: see Sridar_AAAI_2010 for more details.
 
 	:param episodes: list of episodes, where one episode = [[obj_list], {QSR dict}, (start, end_tuple)]
@@ -240,7 +242,6 @@ def get_graphlet_selections(episodes, params, vis=False):
 	:rtype: list
 	"""
 
-	#min_rows, max_rows, max_eps = params
 	if vis: print("num of episodes:", len(episodes))
 	if vis: print("all episodes: ", episodes)
 	episode_ids = {}
@@ -445,6 +446,7 @@ def get_graph(episodes, object_types={}):
 	temporal_vertices = {}
 	for epi1, epi2 in combinations(spatial_data, 2):
 
+		# don't create a temporal relation between two episodes in the start set, or two in the end set.
 		if ( epi1 in E_s and epi2 in E_s) or ( epi1 in E_f and epi2 in E_f): continue
 		(objs1, rels1, frames1) = epi1
 		(objs2, rels2, frames2) = epi2

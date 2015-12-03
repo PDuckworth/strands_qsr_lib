@@ -188,7 +188,7 @@ Parse the Episodes, QSTAG and Graphlets
 
     print("Histogram:")
     for i, j in zip(qstag.graphlets.code_book, qstag.graphlets.histogram):
-        print("\n", i, ": " j)
+        print("\n", i, ": ", j)
 
 Example of QSTAG code
 ---------------------

@@ -55,6 +55,7 @@ def compute_episodes(world_qsr, NOISE_THRESHOLD):
 				epi_start = epi_end = frame
 				epi_rel = rel
 		episodes.append((objects, epi_rel, (epi_start, epi_end)))
+	print("number of eps:", len(episodes))
 	return episodes
 
 def get_E_set(objects, spatial_data):
