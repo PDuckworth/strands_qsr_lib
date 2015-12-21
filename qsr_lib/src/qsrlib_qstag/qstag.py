@@ -42,8 +42,8 @@ class Activity_Graph:
 		if not isinstance(params["max_eps"], int):
 		 	raise RuntimeError("params needs to contain a dictionary of Graphlet parameters. i.e. max_eps, and min/max_rows.")
 
-		self.graphlets = self.Graphlets(self.__episodes, params)
-		"""Graphlets object containing, unique graphlets, hashes and histogram of graphlets."""
+		self.Graphlets(self.__episodes, params)
+		"""Creates a Graphlets object containing lists of, unique graphlets, hashes and histogram of graphlets."""
 
 
 	@property
