@@ -2,6 +2,11 @@
 # -*- coding: utf-8 -*-
 
 """Qualitative Spatio-Temporal Activity Graph module
+<<<<<<< HEAD
+=======
+	__author__      = "Paul Duckworth"
+	__copyright__   = "Copyright 2015, University of Leeds"
+>>>>>>> pauls/qstag-dev
 """
 from __future__ import print_function
 import sys
@@ -44,7 +49,6 @@ class Activity_Graph:
 
 		self.graphlets = Graphlets(self.__episodes, params)
 		"""Creates a Graphlets object containing lists of, unique graphlets, hashes and histogram of graphlets."""
-
 
 	@property
 	def episodes(self):
