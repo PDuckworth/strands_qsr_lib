@@ -42,7 +42,7 @@ class Activity_Graph:
 		if not isinstance(params["max_eps"], int):
 		 	raise RuntimeError("params needs to contain a dictionary of Graphlet parameters. i.e. max_eps, and min/max_rows.")
 
-		self.graphlets = Graphlets(self.__episodes, params)
+		self.graphlets = Graphlets(self.__episodes, params, self.__object_types)
 		"""Creates a Graphlets object containing lists of, unique graphlets, hashes and histogram of graphlets."""
 
 
@@ -189,14 +189,14 @@ class Graphlets:
 	Minimal subgraphs of the same structure as the Activity Graph.
 	'''
 
-	def __init__(self, episodes, params, object_types={}):
+	def __init__(self, episodes, params, object_types):
 		"""Constructor.
 
 		:param episodes: list of QSR episodes, each a tuple of the form: ([objects], {epi_rel}, (epi_start, epi_end))
 		:type episodes: list
 		:param params: dictionary of parameters: minimum rows, maximum rows, maximum episodes used for graphlets
 		:type params: dict
-		:param object_types: dictionary of object name to a generic object type
+		:param object_types: dictionary of object name to a generic object type. Default is set to "unknown" type
 		:type object_types: dict
 		"""
 		try:
@@ -204,7 +204,7 @@ class Graphlets:
 		except KeyError:
 			params = {"min_rows":1, "max_rows":1, "max_eps":3}
 
-		all_graphlets, hashes = get_graphlet_selections(episodes, params, vis=False)
+		all_graphlets, hashes = get_graphlet_selections(episodes, params, object_types, vis=False)
 		"""lists: Two lists of all graphlets and hashes in Activity_Graph."""
 
 		self.histogram = []
@@ -225,7 +225,7 @@ class Graphlets:
 				self.histogram[ind] += 1
 
 
-def get_graphlet_selections(episodes, params, vis=False):
+def get_graphlet_selections(episodes, params, object_types, vis=False):
 	""" This function implements Sridar's validity criteria to select all valid
 	graphlets from an activity graph: see Sridar_AAAI_2010 for more details.
 
@@ -252,9 +252,11 @@ def get_graphlet_selections(episodes, params, vis=False):
 		if vis: print("\nID:", ep_id, ep)
 		ep_start = ep[2][0]
 		ep_end = ep[2][1]
-		episode_ids[ep_id] = ep
-		temporal_info = [ep_start, ep_end, ep_id]
+
 		objs = tuple([ob for ob in ep[0]])
+		episode_ids[ep_id] = ep
+
+		temporal_info = [ep_start, ep_end, ep_id]
 		if vis: print("temp info:", temporal_info, "obj info:", objs)
 
 		if objs not in intervals: intervals[objs] = [temporal_info]
@@ -264,7 +266,6 @@ def get_graphlet_selections(episodes, params, vis=False):
 
 	hashed_IDs = {}
 	range_of_rows = range(params["min_rows"], params["max_rows"]+1)
-
 	for r in range_of_rows:
 		# Once we select the number of rows, find all combinations of rows of r.
 		for obj_pair_comb in combinations(intervals.keys(), r):
@@ -302,9 +303,11 @@ def get_graphlet_selections(episodes, params, vis=False):
 					# So remove the duplicates .
 					selected_ids_set = tuple(set(chain.from_iterable(selected_ids)))
 
-					#Only allow Graphlets of the specified number of Rows. Not all rows.
-					if hash(selected_ids_set) not in hashed_IDs[obj_pair_comb]:
-						hashed_IDs[obj_pair_comb][hash(selected_ids_set)] = selected_ids_set
+					##IF selected_ids_set IS TOO LARGE - DON'T BOTHER HASHING IT.
+						#Only allow Graphlets of the specified number of Rows. Not all rows.
+					if len(selected_ids_set) <= params["max_eps"]:
+						if hash(selected_ids_set) not in hashed_IDs[obj_pair_comb]:
+							hashed_IDs[obj_pair_comb][hash(selected_ids_set)] = selected_ids_set
 
 					#print("pos=",pos)
 					#print("selected_intervals", selected_intervals)
@@ -323,6 +326,11 @@ def get_graphlet_selections(episodes, params, vis=False):
 
 		for hash_, id_codes in IDs.items():
 			eps = [episode_ids[epi_code] for epi_code in id_codes]
+
+			## If Object Types exist for an object, use it in the graphlet.
+				#Replace the objects with object types - will remain the same if no types entered
+			eps = [ (tuple([object_types[ob] if object_types[ob] != "unknown" else ob for ob in e[0]]),
+			          e[1], e[2]) for e in eps ]
 
 			# Remove graphlets that have only one spatial relation - i.e. no temporal relation
 			#if len(eps) <= 1: continue
