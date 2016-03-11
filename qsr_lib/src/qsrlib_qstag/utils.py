@@ -35,11 +35,28 @@ def compute_episodes(world_qsr, NOISE_THRESHOLD):
 
 	for frame in frames:
 		for objs, qsrs in world_qsr.trace[frame].qsrs.items():
-			if objs not in obj_based_qsr_world: obj_based_qsr_world[objs] = []
-			obj_based_qsr_world[objs].append((frame, qsrs.qsr))
+			my_qsrs = {}
+			#print("h", objs, qsrs.qsr)
+
+			for qsr_key, qsr_val in qsrs.qsr.items():
+				#print("  ", qsr_key, qsr_val)
+				if qsr_key is "tpcc":
+					origin,relatum,datum = objs.split(',')
+					new_key=("%s-%s,%s") % (origin,relatum,datum)
+					try:
+						obj_based_qsr_world[new_key].append((frame, {"tpcc": qsrs.qsr["tpcc"]}))
+					except KeyError:
+						obj_based_qsr_world[new_key] = [(frame, {"tpcc": qsrs.qsr["tpcc"]})]
+				else:
+					my_qsrs[qsr_key] = qsr_val
+
+			if my_qsrs != {}:
+				try:
+					obj_based_qsr_world[objs].append((frame, my_qsrs))
+				except KeyError:
+					obj_based_qsr_world[objs] = [(frame, my_qsrs)]
 
 	for objs, frame_tuples in obj_based_qsr_world.items():
-
 		epi_start, epi_rel = frame_tuples[0]
 		epi_end  = copy.copy(epi_start)
 
