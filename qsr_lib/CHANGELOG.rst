@@ -2,6 +2,13 @@
 Changelog for package qsr_lib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.0 (2016-01-20)
+------------------
+* updated allen relation names to match standard.
+* fixed bug in allen temporal relations when two intervals start/end each other
+* made Graphlets a class of its own
+* Contributors: PDuckworth
+
 0.2.1 (2015-12-08)
 ------------------
 * removed import pandas that was not used
