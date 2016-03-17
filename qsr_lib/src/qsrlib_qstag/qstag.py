@@ -378,6 +378,9 @@ def get_graph(episodes, object_types={}):
 	vertex_count = 0
 	graph = iGraph(directed=True)
 
+	if episodes == []:
+		return graph, spatial_obj_edges, temp_spatial_edges
+
 	#print("Looping through the episodes...")
 	for (objs, relations, (intv_start, intv_end)) in episodes:
 		#print(objs, relations, (intv_start, intv_end))

@@ -65,9 +65,11 @@ def apply_median_filter(qsr_world, params):
     return qsr_world
 
 
+
 def median_filter(data, n=3):
     """
-    Function to filter over 1 dimensional data, using window 2*n
+    Function to filter over 1 dimensional data, using window of size n
+    n must be odd and >2, or the tail size will be 0; and will be floor(n/2).
 
     :param data: one dimensional list of QSR states
     :type list
@@ -77,30 +79,44 @@ def median_filter(data, n=3):
     :return: a one dimensional list of filtered QSR states
     :rtype: list
     """
-    if len(data) < 2*n+1:
-        #RuntimeWarning("Median Filter Window is larger than the data (will return data)")
-        print("something stupid...")
-        return data
 
-    ret = data[0:n]
-    for i in range(n, len(data)):
-        window = data[i-n: i+n]
-        elms = [p for p in window]
-        counts, values = [], []
-        for x in set(elms):
-            counts.append(elms.count(x))
-            values.append(x)
-        value = values[np.argmax(counts)]
-
-        # print("pre",ret[-1])
-        # print(i-n, i+n, ":", elms)
-        # print("c:", counts)
-        # print("v:", value)
-
-        # If ambiguity over which relation to add. Add previous.
+    if len(data) < n:
+        #RuntimeWarning("Median Filter Window is larger than the data")
+        # If ambiguity over which relation to add. Use the first.
+        counts, value = count_elements_in(data)
         if counts.count(max(counts)) is 1:
-            ret.append(value)
+            data = [value]*len(data)
         else:
-            # ambiguous - adding previous state
-            ret.append(ret[-1])
-    return ret
+            data = [data[0]]*len(data)
+    else:
+        #Initiate the filter using the median of the first n elements:
+        tail = (n-1)/2  # This will return the floored int o
+        for i in range(0, len(data)):
+            #for an incomplete window, repeate the first or last elements to get a window.
+            if i < tail:
+                window = [data[0]]*tail
+                window.extend(data[i: i+tail+1])
+            # elif i+tail+1 > len(data):
+            #     window = [data[-1]]*tail
+            #     window.extend(data[i-tail: i+1])
+            else:
+                window = data[i-tail: i+tail+1]
+
+            # If ambiguity over which relation to add. Add previous.
+            counts, value = count_elements_in(window)
+            if counts.count(max(counts)) is 1:
+                data[i] = value
+            else:
+                # ambiguous - adding previous state
+                data[i] = data[i-1]
+    return data
+
+def count_elements_in(data):
+    counts, values = [], []
+    elms = [p for p in data]
+
+    for x in set(elms):
+        counts.append(elms.count(x))
+        values.append(x)
+        value = values[np.argmax(counts)]
+    return counts, value
