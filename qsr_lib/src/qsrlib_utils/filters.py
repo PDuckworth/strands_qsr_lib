@@ -42,13 +42,12 @@ def apply_median_filter(qsr_world, params):
                 obj_based_qsr_world[objs][qsr_type].append(qsr)
                 obj_based_qsr_world[objs][qsr_type+"_frames"].append(frame)
 
-
     # Apply the Median Filter to each list of QSR seperately
     for objs, data in obj_based_qsr_world.items():
         for qsr_type in requested_qsrs:
             # print("filtering:", qsr_type)
-            obj_based_qsr_world[objs][qsr_type+"_filtered"] = median_filter(data[qsr_type], params["window"])
-
+            if data[qsr_type] != []:
+                obj_based_qsr_world[objs][qsr_type+"_filtered"] = median_filter(data[qsr_type], params["window"])
 
     # Overwrite the original QSR data with the filtered data, at the appropriate timepoints (merging QSR types back together in the process)
     for frame in frames:
@@ -61,7 +60,8 @@ def apply_median_filter(qsr_world, params):
                     new_qsrs[qsr_type] = data[qsr_type+"_filtered"][ind]
 
             # print("frame:", frame, "prev:", qsr_world.trace[frame].qsrs[objs].qsr, "new:", new_qsrs)
-            qsr_world.trace[frame].qsrs[objs].qsr = new_qsrs
+            if new_qsrs != {}:
+                qsr_world.trace[frame].qsrs[objs].qsr = new_qsrs
     return qsr_world
 
 
