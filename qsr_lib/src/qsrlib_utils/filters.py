@@ -46,7 +46,9 @@ def apply_median_filter(qsr_world, params):
     for objs, data in obj_based_qsr_world.items():
         for qsr_type in requested_qsrs:
             # print("filtering:", qsr_type)
-            obj_based_qsr_world[objs][qsr_type+"_filtered"] = median_filter(data[qsr_type], params["window"])
+
+            if data[qsr_type] != []:
+                obj_based_qsr_world[objs][qsr_type+"_filtered"] = median_filter(data[qsr_type], params["window"])
 
     # check the filtering works:
     # for cnt, (i,j) in enumerate(zip(obj_based_qsr_world[objs]['qtcbs'], obj_based_qsr_world[objs]['qtcbs_filtered'])):
@@ -63,13 +65,16 @@ def apply_median_filter(qsr_world, params):
                     new_qsrs[qsr_type] = data[qsr_type+"_filtered"][ind]
 
             # print("frame:", frame, "prev:", qsr_world.trace[frame].qsrs[objs].qsr, "new:", new_qsrs)
-            qsr_world.trace[frame].qsrs[objs].qsr = new_qsrs
+            if new_qsrs != {}:
+                qsr_world.trace[frame].qsrs[objs].qsr = new_qsrs
     return qsr_world
+
 
 
 def median_filter(data, n=3):
     """
-    Function to filter over 1 dimensional data, using window 2*n
+    Function to filter over 1 dimensional data, using window of size n
+    n must be odd and >2, or the tail size will be 0; and will be floor(n/2).
 
     :param data: one dimensional list of QSR states
     :type list
