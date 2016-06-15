@@ -18,7 +18,7 @@ class Activity_Graph:
 
 	Accepts a QSRLib.World_Trace and QSRLib.QSR_World_Trace as input.
 	"""
-	def __init__(self, world, world_qsr, object_types={}, params={}, noise_threshold=3):
+	def __init__(self, world, world_qsr, object_types={}, params={}):
 		"""Constructor.
 
 		:param world: The World Trace object
@@ -28,7 +28,7 @@ class Activity_Graph:
 		:param object_types: dictionary of object name to a generic object type
 		:type object_types: dict
 		"""
-		self.__episodes = utils.compute_episodes(world_qsr, noise_threshold)
+		self.__episodes = utils.compute_episodes(world_qsr)
 		"""list: The list of QSR Episodes used to generate the QSTAG."""
 
 		self.__object_types = self.get_objects_types(object_types, world)

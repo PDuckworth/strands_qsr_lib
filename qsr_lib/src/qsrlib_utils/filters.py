@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
+import sys
 import numpy as np
 from qsrlib_io.world_qsr_trace import World_QSR_Trace
 
@@ -26,7 +27,6 @@ def apply_median_filter(qsr_world, params):
     # print("all frames:", len(frames))
     # print("qsrs requested:", qsr_world.qsr_type)
 
-
     # Obtain the QSR data for each object set, and each qsr type.
     obj_based_qsr_world = {}
     for frame in frames:
@@ -42,13 +42,15 @@ def apply_median_filter(qsr_world, params):
                 obj_based_qsr_world[objs][qsr_type].append(qsr)
                 obj_based_qsr_world[objs][qsr_type+"_frames"].append(frame)
 
-
     # Apply the Median Filter to each list of QSR seperately
     for objs, data in obj_based_qsr_world.items():
         for qsr_type in requested_qsrs:
             # print("filtering:", qsr_type)
             obj_based_qsr_world[objs][qsr_type+"_filtered"] = median_filter(data[qsr_type], params["window"])
 
+    # check the filtering works:
+    # for cnt, (i,j) in enumerate(zip(obj_based_qsr_world[objs]['qtcbs'], obj_based_qsr_world[objs]['qtcbs_filtered'])):
+    #     print(cnt, "(",i,")", "   ", "(",j,")")
 
     # Overwrite the original QSR data with the filtered data, at the appropriate timepoints (merging QSR types back together in the process)
     for frame in frames:
@@ -79,28 +81,44 @@ def median_filter(data, n=3):
     """
     if len(data) < 2*n+1:
         #RuntimeWarning("Median Filter Window is larger than the data (will return data)")
-        print("something stupid...")
+        print("something stupid. Mean Filter window larget than number of frames...")
         return data
 
-    ret = data[0:n]
+    """initial window < size of window. Add most common to all."""
+    initial_window = data[0:n]
+    counts, value = get_counts_from_window(initial_window)
+    #if the max counted relation is unique, fill the window with this.
+    if counts.count(max(counts)) is 1:
+        ret = [value]*n
+    #otherwise, just pick one as they have no ordinal information
+    else:
+        print("relation is not unique in the initial window of size %s, selecting the latest relation: %s" % (n, initial_window[-1]))
+        ret = [initial_window[-1]]*n
+
+    """continue with windows of size 2*n"""
+
     for i in range(n, len(data)):
-        window = data[i-n: i+n]
-        elms = [p for p in window]
-        counts, values = [], []
-        for x in set(elms):
-            counts.append(elms.count(x))
-            values.append(x)
-        value = values[np.argmax(counts)]
+        #window should be next n values. With previous n values (already filtered)
+        next_n = data[i: i+n+1]
+        prev_n = ret[i-n: i]
+        window = prev_n + next_n
+        # print(window)
+        counts, value = get_counts_from_window(window)
 
-        # print("pre",ret[-1])
-        # print(i-n, i+n, ":", elms)
-        # print("c:", counts)
-        # print("v:", value)
-
-        # If ambiguity over which relation to add. Add previous.
+        # If the max counted relation is unique, add it
         if counts.count(max(counts)) is 1:
             ret.append(value)
+        # If multiple relations have same count, - add the previous relation
         else:
-            # ambiguous - adding previous state
             ret.append(ret[-1])
     return ret
+
+def get_counts_from_window(window):
+    """count the number of different relations in a window. return the counds and winning value"""
+    counts, values = [], []
+    elms = [p for p in window]
+    for x in set(elms):
+        counts.append(elms.count(x))
+        values.append(x)
+    value = values[np.argmax(counts)]
+    return counts, value
