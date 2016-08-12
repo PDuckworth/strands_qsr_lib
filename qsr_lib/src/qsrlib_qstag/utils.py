@@ -37,7 +37,8 @@ def compute_episodes(world_qsr):
 
 	"""remove the first frame which cannot contain a qtcb relation"""
 	if "qtcbs" in world_qsr.qsr_type:
-		if frames[0] == 1.0: frames.pop(0)
+		if len(world_qsr.qsr_type.split(",")) > 1:  #i.e. there is more than one relation
+			frames.pop(0)
 
 	for frame in frames:
 		for objs, qsrs in world_qsr.trace[frame].qsrs.items():
@@ -63,7 +64,11 @@ def compute_episodes(world_qsr):
 					obj_based_qsr_world[objs] = [(frame, my_qsrs)]
 
 	#print("s", obj_based_qsr_world[objs])
+	# for i in obj_based_qsr_world['Kettle_32,torso']:
+	# 	print(i)
+
 	for objs, frame_tuples in obj_based_qsr_world.items():
+		# if objs != 'Kettle_32,torso': continue
 		epi_start, epi_rel = frame_tuples[0]
 		epi_end  = copy.copy(epi_start)
 
@@ -75,6 +80,11 @@ def compute_episodes(world_qsr):
 				episodes.append( (objects, epi_rel, (epi_start, epi_end)) )
 				epi_start = epi_end = frame
 				epi_rel = rel
+
+		# if epi_end - epi_start < 4:
+		# 	print("what?", episodes)
+		# 	sys.exit(1)
+
 		episodes.append((objects, epi_rel, (epi_start, epi_end)))
 
 	"""If any of the qsr values == ignore. Remove that episode entirely. """
@@ -86,7 +96,6 @@ def compute_episodes(world_qsr):
 		if ignore_flag == 0: filtered_out_ignore.append(ep)
 
 	print("number of eps:", len(filtered_out_ignore))
-
 	return filtered_out_ignore
 
 def get_E_set(objects, spatial_data):
@@ -111,19 +120,31 @@ def get_E_set(objects, spatial_data):
 			ep_objects =  epi[0]
 			frame_window = epi[2]
 
-			#if (objects[0] == obj1 and objects[1] == obj2):
 			if list(possible_ids) == ep_objects:
 				start[frame_window[0]] = epi
 				end[frame_window[1]] = epi
 				added=1
 		if added == 1:
-			st=start.keys()
-			st.sort()
+			st=sorted(start.keys())
 			E_s.append(start[st[0]])
-			en=end.keys()
-			en.sort()
+			en=sorted(end.keys())
 			E_f.append(end[en[-1]])
-	return E_s, E_f
+
+	# check whether all the start or end episodes actually start/end at the same frame
+	# not just whether they are the first or last episode for that object combination.
+	earliest_starting_time = (min([st for (obs, x, (st, en)) in E_s ]))
+	latest_ending_time = (max([en for (obs, x, (st, en)) in E_f]))
+
+	new_E_s, new_E_f = [], []
+	for (obs, x, (st, en)) in E_s:
+		if st is earliest_starting_time:
+			new_E_s.append((obs, x, (st, en)))
+
+	for (obs, x, (st, en)) in E_f:
+		if en is latest_ending_time:
+			new_E_f.append((obs, x, (st, en)))
+
+	return new_E_s, new_E_f
 
 def get_allen_relation(duration1, duration2):
 	"""Generates an Allen interval algebra relation between two discrete durations of time
