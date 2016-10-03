@@ -84,10 +84,10 @@ def median_filter(data, n=3):
     :return: a one dimensional list of filtered QSR states
     :rtype: list
     """
-    if len(data) < 2*n+1:
-        #RuntimeWarning("Median Filter Window is larger than the data (will return data)")
-        print("something stupid. Mean Filter window larget than number of frames...")
-        return data
+    # if len(data) < 2*n+1:
+    #     #RuntimeWarning("Median Filter Window is larger than the data (will return data)")
+    #     print("something stupid. Mean Filter window larget than number of frames...")
+    #     return data
 
     """initial window < size of window. Add most common to all."""
     initial_window = data[0:n]

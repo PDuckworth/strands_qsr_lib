@@ -18,7 +18,7 @@ class Activity_Graph:
 
     Accepts a QSRLib.World_Trace and QSRLib.QSR_World_Trace as input.
     """
-    def __init__(self, world, world_qsr, object_types={}, params={}):
+    def __init__(self, world, world_qsr, object_types={}, params={}, vis=False):
         """Constructor.
 
         :param world: The World Trace object
@@ -34,7 +34,7 @@ class Activity_Graph:
         self.__object_types = self.get_objects_types(object_types, world)
         """dict: A dictionary of object names and types."""
 
-        self.graph, self.__spatial_obj_edges, self.__temp_spatial_edges = get_graph(self.__episodes, self.__object_types)
+        self.graph, self.__spatial_obj_edges, self.__temp_spatial_edges = get_graph(self.__episodes, self.__object_types, vis=vis)
         """igraph.Graph: An igraph graph object containing all the object, spatial and temporal nodes.
         list: A list of edges connecting the spatial nodes to the object nodes.
         list: A list of edges connecting the spatial nodes to the temporal nodes."""
@@ -46,7 +46,7 @@ class Activity_Graph:
             print("dynamic args needs something like this:  {qstag {params: {min_rows:1, max_rows:1, max_eps:3}}" )
             sys.exit(1)
 
-        self.graphlets = Graphlets(self.__episodes, params, self.__object_types)
+        self.graphlets = Graphlets(self.__episodes, params, self.__object_types, vis=vis)
         """Creates a Graphlets object containing lists of, unique graphlets, hashes and histogram of graphlets."""
 
 
@@ -193,7 +193,7 @@ class Graphlets:
     Minimal subgraphs of the same structure as the Activity Graph.
     '''
 
-    def __init__(self, episodes, params, object_types):
+    def __init__(self, episodes, params, object_types, vis=False):
         """Constructor.
 
         :param episodes: list of QSR episodes, each a tuple of the form: ([objects], {epi_rel}, (epi_start, epi_end))
@@ -208,7 +208,7 @@ class Graphlets:
         except KeyError:
             params = {"min_rows":1, "max_rows":1, "max_eps":3}
 
-        all_graphlets, hashes = get_graphlet_selections(episodes, params, object_types, vis=False)
+        all_graphlets, hashes = get_graphlet_selections(episodes, params, object_types, vis=vis)
         """lists: Two lists of all graphlets and hashes in Activity_Graph."""
 
         self.histogram = []
@@ -252,10 +252,16 @@ def get_graphlet_selections(episodes, params, object_types, vis=False):
     # Gather the episodes and interval data
     # Use ID codes for the episodes throughout the function
     # At the end we replace the codes with episodes
+    observation_start, observation_end = 10000, 0
+
     for ep_id, ep in enumerate(episodes):
         if vis: print("\nID:", ep_id, ep)
         ep_start = ep[2][0]
         ep_end = ep[2][1]
+
+        # Obtain the start and end of the observation from looping through the episodes.
+        if ep_start < observation_start: observation_start = ep_start
+        if ep_end > observation_end: observation_end = ep_end
 
         objs = tuple([ob for ob in ep[0]])
         episode_ids[ep_id] = ep
@@ -265,8 +271,22 @@ def get_graphlet_selections(episodes, params, object_types, vis=False):
 
         if objs not in intervals: intervals[objs] = [temporal_info]
         else: intervals[objs].append(temporal_info)
+
     if vis: print("\nepisode_ids: ", episode_ids)
     if vis: print("\nintervals: ", intervals)
+    if vis: print("\nobservation_start: ", observation_start)
+    if vis: print("observation_end: ", observation_end)
+
+    ## Obtain the episodes which occur at the start or end of the observation
+    episodes_which_start, episodes_which_end = set([]), set([])
+    for obs, data in intervals.items():
+        for (ep_start, ep_end, ep_id) in data:
+            if ep_start is observation_start:
+                episodes_which_start.add(ep_id)
+            if ep_end is observation_end:
+                episodes_which_end.add(ep_id)
+    if vis: print("ep IDs which start: ", episodes_which_start)
+    if vis: print("ep IDs which end: ", episodes_which_end)
 
     hashed_IDs = {}
     range_of_rows = range(params["min_rows"], params["max_rows"]+1)
@@ -295,24 +315,36 @@ def get_graphlet_selections(episodes, params, object_types, vis=False):
             # Loop through this broken timeline and find all
             # combinations (r is from 1 to num_of_intervals)
             # of consecutive intervals (intervals in a stretch).
+
+            #compute combinations of the intervales, upto some length:
+            num_of_combinations = min(params["max_eps"], num_of_interval_breaks)
+            if vis: print("num of combinations: min(%s, %s): %s" % (params["max_eps"], num_of_interval_breaks, num_of_combinations) )
+
             hashed_IDs[obj_pair_comb] = {}
-            for len_ in xrange(1, num_of_interval_breaks+1):
-                #print("len_=",len_)
+            # only search for combinations of length upto the parameter maximum.
+            for len_ in xrange(1, num_of_combinations+1):
+            # for len_ in xrange(1, num_of_interval_breaks+1):
+                if vis: print(" len_=",len_)
                 for pos in xrange(num_of_interval_breaks):
                     # Find the combined interval of this combination of intervals
                     selected_intervals = interval_breaks[pos:pos+len_]
                     # Get the relations active in this active interval
                     selected_ids = [epi[2] for epi in selected_intervals]
-                    # Some episodes are repeated as they are active in two or more intervals.
-                    # So remove the duplicates .
-                    selected_ids_set = tuple(set(chain.from_iterable(selected_ids)))
+                    # Some episodes are repeated as they are active in two or more intervals. So remove the duplicates .
+                    selected_ids_set = set(chain.from_iterable(selected_ids))
 
                     ##IF selected_ids_set IS TOO LARGE - DON'T BOTHER HASHING IT.
-                        #Only allow Graphlets of the specified number of Rows. Not all rows.
+                    #Only allow Graphlets of the specified number of Rows. Not all rows.
                     if len(selected_ids_set) <= params["max_eps"]:
-                        if hash(selected_ids_set) not in hashed_IDs[obj_pair_comb]:
-                            hashed_IDs[obj_pair_comb][hash(selected_ids_set)] = selected_ids_set
-
+                        # If theselection has more than 1 episode in the start or end set, then do not create a sub-graph from this.
+                        if len(selected_ids_set.intersection(episodes_which_start)) > 1 or len(selected_ids_set.intersection(episodes_which_end)) > 1:
+                            if vis: print(" ignore: %s" % selected_ids_set)
+                            continue
+                        else:
+                            selected_ids_set = tuple(selected_ids_set)
+                            if vis: print(" selected IDs:", selected_ids_set)
+                            if hash(selected_ids_set) not in hashed_IDs[obj_pair_comb]:
+                                hashed_IDs[obj_pair_comb][hash(selected_ids_set)] = selected_ids_set
                     #print("pos=",pos)
                     #print("selected_intervals", selected_intervals)
                     #print("selected_ids", selected_ids)
@@ -340,7 +372,7 @@ def get_graphlet_selections(episodes, params, object_types, vis=False):
             #if len(eps) <= 1: continue
             if len(eps) <= params["max_eps"]:
                 #episodes_selection[objs].append(eps)
-                graph, spatial_obj_edges, temp_spatial_edges = get_graph(eps)
+                graph, spatial_obj_edges, temp_spatial_edges = get_graph(eps, vis=vis)
                 list_of_graphlets.append(graph)
                 list_of_graphlet_hashes.append(utils.graph_hash(graph))
 
@@ -348,11 +380,10 @@ def get_graphlet_selections(episodes, params, object_types, vis=False):
                     print("\nEPS= ", eps)
                     print(graph)
                     print("HASH:", utils.graph_hash(graph))
-
     return list_of_graphlets, list_of_graphlet_hashes
 
 
-def get_graph(episodes, object_types={}):
+def get_graph(episodes, object_types={}, vis=False):
     """Generates a graph from a set of input episode QSRs.
 
     :param episodes: list of episodes, where one episode = [[obj_list], {QSR dict}, (start, end_tuple)]
@@ -387,7 +418,7 @@ def get_graph(episodes, object_types={}):
 
     #print("Looping through the episodes...")
     for (objs, relations, (intv_start, intv_end)) in episodes:
-        #print(objs, relations, (intv_start, intv_end))
+        if vis: print("eps:", objs, relations, (intv_start, intv_end))
 
         #############################################
         #   Object Nodes:                           #
@@ -446,22 +477,24 @@ def get_graph(episodes, object_types={}):
 
         spatial_data.append( (object_ids, vertex_count,  (intv_start, intv_end)) )
         vertex_count += 1
-
+    if vis: print("spatial data:", spatial_data )
     #############################################
     #   Temporal Nodes:                         #
     #############################################
     #print("data: \n", spatial_data)
     #print("objects \n", objects)
 
-    E_s, E_f = utils.get_E_set(objects, spatial_data)
-    #print("E_s: ", E_s)
-    #print("E_f: ", E_f)
+    # # Es and Ef sets removed. Activity Graph now contains these relations.
+    # # Graphlets are not created if they contain two or more nodes which would be in the Es or Ef sets.
+    # E_s, E_f = utils.get_E_set(objects, spatial_data)
+    # if vis: print("E_s: ", E_s)
+    # if vis: print("E_f: ", E_f)
 
     temporal_vertices = {}
     for epi1, epi2 in combinations(spatial_data, 2):
 
         # don't create a temporal relation between two episodes in the start set, or two in the end set.
-        if ( epi1 in E_s and epi2 in E_s) or ( epi1 in E_f and epi2 in E_f): continue
+        # if ( epi1 in E_s and epi2 in E_s) or ( epi1 in E_f and epi2 in E_f): continue   # # Removed condition
         (objs1, rels1, frames1) = epi1
         (objs2, rels2, frames2) = epi2
 
