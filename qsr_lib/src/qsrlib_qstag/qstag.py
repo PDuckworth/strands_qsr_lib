@@ -208,7 +208,7 @@ class Graphlets:
         except KeyError:
             params = {"min_rows":1, "max_rows":1, "max_eps":3}
 
-        all_graphlets, hashes = get_graphlet_selections(episodes, params, object_types, vis=vis)
+        all_graphlets, hashes, graphlet_timepoints = get_graphlet_selections(episodes, params, object_types, vis=vis)
         """lists: Two lists of all graphlets and hashes in Activity_Graph."""
 
         self.histogram = []
@@ -217,6 +217,7 @@ class Graphlets:
         """list: The list of graphlet hashes (zip with histogram for count of each)."""
         self.graphlets = {}
         """dict: dictionary of the graphlet hash as key, and the iGraph object as value."""
+        self.graphlet_timepoints = graphlet_timepoints
 
         for h, g in zip(hashes, all_graphlets):
 
@@ -243,7 +244,7 @@ def get_graphlet_selections(episodes, params, object_types, vis=False):
     :return list_of_graphlet_hashes: a list of hashes, relating to the graphlets
     :rtype: list
     """
-
+    # vis=True
     if vis: print("num of episodes:", len(episodes))
     if vis: print("all episodes: ", episodes)
     episode_ids = {}
@@ -323,9 +324,11 @@ def get_graphlet_selections(episodes, params, object_types, vis=False):
             hashed_IDs[obj_pair_comb] = {}
             # only search for combinations of length upto the parameter maximum.
             for len_ in xrange(1, num_of_combinations+1):
-            # for len_ in xrange(1, num_of_interval_breaks+1):
+            # for len_ in xrange(3, num_of_combinations+1):              # Uncomment to only get larger subgraph words
                 if vis: print(" len_=",len_)
-                for pos in xrange(num_of_interval_breaks):
+
+                # for pos in xrange( (num_of_interval_breaks - len_)):     # Uncomment to only get larger subgraph words
+                for pos in xrange( (num_of_interval_breaks)):
                     # Find the combined interval of this combination of intervals
                     selected_intervals = interval_breaks[pos:pos+len_]
                     # Get the relations active in this active interval
@@ -356,9 +359,11 @@ def get_graphlet_selections(episodes, params, object_types, vis=False):
     #episodes_selection = {}
     list_of_graphlets = []
     list_of_graphlet_hashes = []
+    graphlet_timepoints = {}
 
-    for objs, IDs in hashed_IDs.items():
+    for cnt, (objs, IDs) in enumerate(hashed_IDs.items()):
         #episodes_selection[objs] = []
+        st, end = 10000, 0
 
         for hash_, id_codes in IDs.items():
             eps = [episode_ids[epi_code] for epi_code in id_codes]
@@ -368,19 +373,31 @@ def get_graphlet_selections(episodes, params, object_types, vis=False):
             eps = [ (tuple([object_types[ob] if object_types[ob] != "unknown" else ob for ob in e[0]]),
                       e[1], e[2]) for e in eps ]
 
+            for e in eps:
+                if e[2][0] < st: st = e[2][0]
+                if e[2][1] > end: end = e[2][1]
+
             # Remove graphlets that have only one spatial relation - i.e. no temporal relation
             #if len(eps) <= 1: continue
             if len(eps) <= params["max_eps"]:
                 #episodes_selection[objs].append(eps)
                 graph, spatial_obj_edges, temp_spatial_edges = get_graph(eps, vis=vis)
                 list_of_graphlets.append(graph)
-                list_of_graphlet_hashes.append(utils.graph_hash(graph))
+                h = utils.graph_hash(graph)
+                list_of_graphlet_hashes.append(h)
+                try:
+                    graphlet_timepoints[h].append( (st,end) )
+                except:
+                    graphlet_timepoints[h] = [(st,end) ]
 
                 if vis:
                     print("\nEPS= ", eps)
                     print(graph)
-                    print("HASH:", utils.graph_hash(graph))
-    return list_of_graphlets, list_of_graphlet_hashes
+                    print("HASH:", h)
+                    print("start and end: ", st, end)
+
+    if vis: print(graphlet_timepoints)
+    return list_of_graphlets, list_of_graphlet_hashes, graphlet_timepoints
 
 
 def get_graph(episodes, object_types={}, vis=False):
