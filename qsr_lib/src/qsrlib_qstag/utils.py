@@ -32,6 +32,9 @@ def compute_episodes(world_qsr):
 	"""
 
 	episodes = []
+	if len(frames)==0:
+		return episodes
+
 	obj_based_qsr_world = {}
 	frames = world_qsr.get_sorted_timestamps()
 
