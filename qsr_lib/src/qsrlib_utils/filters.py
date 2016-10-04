@@ -24,7 +24,7 @@ def apply_median_filter(qsr_world, params):
 
     frames = qsr_world.get_sorted_timestamps()
     requested_qsrs = qsr_world.qsr_type.split(",")
-    # print("all frames:", len(frames))
+    # print("all frames:", len(frames), "param:", params)
     # print("qsrs requested:", qsr_world.qsr_type)
 
     # Obtain the QSR data for each object set, and each qsr type.
@@ -51,8 +51,10 @@ def apply_median_filter(qsr_world, params):
                 obj_based_qsr_world[objs][qsr_type+"_filtered"] = median_filter(data[qsr_type], params["window"])
 
     # check the filtering works:
-    # for cnt, (i,j) in enumerate(zip(obj_based_qsr_world[objs]['qtcbs'], obj_based_qsr_world[objs]['qtcbs_filtered'])):
-    #     print(cnt, "(",i,")", "   ", "(",j,")")
+    # if 'Kettle_32,torso' in obj_based_qsr_world.keys():
+    #     objs = 'Kettle_32,torso'
+    #     for cnt, (i,j) in enumerate(zip(obj_based_qsr_world[objs]['qtcbs'], obj_based_qsr_world[objs]['qtcbs_filtered'])):
+    #         print(cnt, objs, "(",i,")", "   ", "(",j,")")
 
     # Overwrite the original QSR data with the filtered data, at the appropriate timepoints (merging QSR types back together in the process)
     for frame in frames:
@@ -97,7 +99,7 @@ def median_filter(data, n=3):
         ret = [value]*n
     #otherwise, just pick one as they have no ordinal information
     else:
-        print("relation is not unique in the initial window of size %s, selecting the latest relation: %s" % (n, initial_window[-1]))
+        # print("relation is not unique in the initial window of size %s, selecting the latest relation: %s" % (n, initial_window[-1]))
         ret = [initial_window[-1]]*n
 
     """continue with windows of size 2*n"""
