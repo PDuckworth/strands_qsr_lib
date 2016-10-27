@@ -32,11 +32,11 @@ def compute_episodes(world_qsr):
 	"""
 
 	episodes = []
+	frames = world_qsr.get_sorted_timestamps()
 	if len(frames)==0:
 		return episodes
 
 	obj_based_qsr_world = {}
-	frames = world_qsr.get_sorted_timestamps()
 
 	"""remove the first frame which cannot contain a qtcb relation"""
 	if "qtcbs" in world_qsr.qsr_type:
