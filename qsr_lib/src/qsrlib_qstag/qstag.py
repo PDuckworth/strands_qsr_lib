@@ -8,7 +8,7 @@ import sys
 from igraph import Graph as iGraph
 from itertools import combinations, chain
 import qsrlib_qstag.utils as utils
-
+import pdb;
 
 class Activity_Graph:
     """
@@ -28,7 +28,11 @@ class Activity_Graph:
         :param object_types: dictionary of object name to a generic object type
         :type object_types: dict
         """
-        self.__episodes = utils.compute_episodes(world_qsr)
+
+        try:
+            self.__episodes = utils.compute_episodes(world_qsr, params["ep_max_length"])
+        except KeyError:
+            self.__episodes = utils.compute_episodes(world_qsr, 0)
         """list: The list of QSR Episodes used to generate the QSTAG."""
 
         self.__object_types = self.get_objects_types(object_types, world)
@@ -49,6 +53,7 @@ class Activity_Graph:
         self.graphlets = Graphlets(self.__episodes, params, self.__object_types, vis=vis)
         """Creates a Graphlets object containing lists of, unique graphlets, hashes and histogram of graphlets."""
 
+        # pdb.set_trace()
 
     @property
     def episodes(self):

@@ -8,10 +8,11 @@ import copy, sys
 from igraph import Graph as iGraph
 import numpy as np
 import warnings
+import pdb
 
 
 
-def compute_episodes(world_qsr):
+def compute_episodes(world_qsr, episode_length_threshold):
 	"""
 	Compute QSR Episodes from a QSRLib.QSR_World_Trace object.
 	QSR Episodes compresses repeating QSRs into a temporal interval over which they hold.
@@ -70,19 +71,31 @@ def compute_episodes(world_qsr):
 	# for i in obj_based_qsr_world['Kettle_32,torso']:
 	# 	print(i)
 
+	# set a counter on the length of an episode when being created - so you can limit it.
+
 	for objs, frame_tuples in obj_based_qsr_world.items():
-		# if objs != 'Kettle_32,torso': continue
+		# if objs != 'Double_doors_112,torso': continue
 		epi_start, epi_rel = frame_tuples[0]
 		epi_end  = copy.copy(epi_start)
-
 		objects = objs.split(',')
+		counter = 0
 		for (frame, rel) in frame_tuples:
-			if rel == epi_rel:
-				epi_end = frame
+			if episode_length_threshold == 0:
+				if rel == epi_rel:
+					epi_end = frame
+				else:
+					episodes.append( (objects, epi_rel, (epi_start, epi_end)) )
+					epi_start = epi_end = frame
+					epi_rel = rel
 			else:
-				episodes.append( (objects, epi_rel, (epi_start, epi_end)) )
-				epi_start = epi_end = frame
-				epi_rel = rel
+				if rel == epi_rel and counter <= episode_length_threshold:
+					epi_end = frame
+					counter+=1
+				else:
+					episodes.append( (objects, epi_rel, (epi_start, epi_end)) )
+					epi_start = epi_end = frame
+					epi_rel = rel
+					counter = 0
 
 		# if epi_end - epi_start < 4:
 		# 	print("what?", episodes)
@@ -99,6 +112,8 @@ def compute_episodes(world_qsr):
 		if ignore_flag == 0: filtered_out_ignore.append(ep)
 
 	print("number of eps:", len(filtered_out_ignore))
+	# for i in filtered_out_ignore:
+	# 	print(i)
 	return filtered_out_ignore
 
 def get_E_set(objects, spatial_data):
@@ -191,7 +206,6 @@ def get_allen_relation(duration1, duration2):
 	elif ie1 == ie2 and is2 > is1:
 		return 'fi'
 
-
 def graph_hash(G, node_name_attribute='name', edge_name_attribute=None):
 	"""
 	See Figure 4 in 'kLog: A Language for Logical and Relational Learning with Kernels'
@@ -270,9 +284,6 @@ def get_temporal_chords_from_episodes(episodes):
 		interval_breaks.append([start, end, interval_value])
 	return interval_breaks
 
-
-
-
 def graph2dot(graph, out_dot_file):
 	"""To visualize the iGraph graph, this prints a dot file to the file location given
 
@@ -326,3 +337,102 @@ def graph2dot(graph, out_dot_file):
 		dot_file.write('%s -> %s [arrowhead = "normal", color="red"];\n' %(r_edge[0], r_edge[1]))
 	dot_file.write('}\n')
 	dot_file.close()
+
+def graphlet2dot(graph, g_name, path):
+    """Modified version of the Graph2dot function - used to print any graphlet image usign dot"""
+
+    # Write the graph to dot file
+    # Can generate a graph figure from this .dot file using the 'dot' command
+    # dot -Tpng input.dot -o output.png
+
+    out_dot_file = os.path.join(path, g_name + ".dot")
+
+    dot_file = open(out_dot_file, 'w')
+    dot_file.write('digraph activity_graph {\n')
+    dot_file.write('    size = "40,40";\n')
+    dot_file.write('    node [fontsize = "16", shape = "box", style="filled", fillcolor="aquamarine"];\n')
+    dot_file.write('    ranksep=5;\n')
+    # Create temporal nodes
+    dot_file.write('    subgraph _1 {\n')
+    dot_file.write('    rank="source";\n')
+
+
+    ##Because it's not an Activity Graph - need to create all these things:
+    temporal_nodes=[]
+    temporal_ids=[]
+    for node in graph.vs():
+        if node['node_type'] == 'temporal_relation':
+            temporal_nodes.append(node)
+            temporal_ids.append(node.index)
+            #print node, node.index
+
+    spatial_nodes = []
+    spatial_ids = []
+    for node in graph.vs():
+        if node['node_type'] == 'spatial_relation':
+            spatial_nodes.append(node)
+            spatial_ids.append(node.index)
+            #print node, node.index
+
+    object_nodes = []
+    object_ids = []
+    for node in graph.vs():
+        if node['node_type'] == 'object':
+            object_nodes.append(node)
+            object_ids.append(node.index)
+            #print node, node.index
+
+    temp_spatial_edges = []
+    spatial_obj_edges = []
+
+    for edge in graph.es():
+        if edge.source in object_ids and edge.target in spatial_ids:
+            spatial_obj_edges.append((edge.source, edge.target))
+        elif edge.source in spatial_ids and edge.target in object_ids:
+            spatial_obj_edges.append((edge.source, edge.target))
+        elif edge.source in temporal_ids and edge.target in spatial_ids:
+            temp_spatial_edges.append((edge.source, edge.target))
+        elif edge.source in spatial_ids and edge.target in temporal_ids:
+            temp_spatial_edges.append((edge.source, edge.target))
+        else:
+            print("what's this?: ", edge.source, edge.target)
+
+    #Build Graph image
+
+    for tnode in temporal_nodes:
+        dot_file.write('    %s [fillcolor="white", label="%s", shape=ellipse];\n' %(tnode.index, tnode['name']))
+
+    dot_file.write('}\n')
+
+    # Create spatial nodes
+    dot_file.write('    subgraph _2 {\n')
+    dot_file.write('    rank="same";\n')
+    for rnode in spatial_nodes:
+        dot_file.write('    %s [fillcolor="lightblue", label="%s"];\n' %(rnode.index, rnode['name']))
+    dot_file.write('}\n')
+
+    # Create object nodes
+    dot_file.write('    subgraph _3 {\n')
+    dot_file.write('    rank="sink";\n')
+    for onode in object_nodes:
+        dot_file.write('%s [fillcolor="tan1", label="%s"];\n' %(onode.index, onode['name']))
+    dot_file.write('}\n')
+
+    # Create temporal to spatial edges
+    for t_edge in temp_spatial_edges:
+        #print t_edge[0],t_edge[1]
+        dot_file.write('%s -> %s [arrowhead = "normal", color="red"];\n' %(t_edge[0], t_edge[1]))
+
+    # Create spatial to object edges
+    for r_edge in spatial_obj_edges:
+        dot_file.write('%s -> %s [arrowhead = "normal", color="red"];\n' %(r_edge[0], r_edge[1]))
+    dot_file.write('}\n')
+    dot_file.close()
+
+    # creat a .png then remove the .dot to save memory. Fix the png to either 900 or 1500, then whitespace it to fix the size
+    foofile = os.path.join(path, "foo.png")
+    outfile = os.path.join(path, g_name + ".png")
+    os.system("dot -Tpng -Gsize=9,15\! -Gdpi=100 %s -o %s " % (out_dot_file,foofile) )
+    os.system("convert %s -gravity center -background white -extent 900x1500 %s" % (foofile, outfile))
+    os.system("rm %s" % out_dot_file)
+    # os.system("rm %s" % foofile)
