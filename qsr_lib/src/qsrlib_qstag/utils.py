@@ -12,7 +12,7 @@ import pdb
 
 
 
-def compute_episodes(world_qsr, episode_length_threshold):
+def compute_episodes(world_qsr, params):
 	"""
 	Compute QSR Episodes from a QSRLib.QSR_World_Trace object.
 	QSR Episodes compresses repeating QSRs into a temporal interval over which they hold.
@@ -32,12 +32,28 @@ def compute_episodes(world_qsr, episode_length_threshold):
 	:type world_qsr: :class:`World_QSR_Trace <qsrlib_io.world_qsr_trace>`
 	"""
 
+	try:
+		episode_length_threshold = params["frames_per_ep"]
+	except KeyError:
+		episode_length_threshold = 0
+
+	try:
+		split_qsrs = params["split_qsrs"]
+	except KeyError:
+		split_qsrs = False
+
 	episodes = []
 	frames = world_qsr.get_sorted_timestamps()
 	if len(frames)==0:
 		return episodes
 
+	# Create a world trace based on QSRs, then Objects, in order to compute episodes
 	obj_based_qsr_world = {}
+	if split_qsrs:
+		for q in world_qsr.qsr_type.split(","):
+			obj_based_qsr_world[q] = {}
+	else:
+		obj_based_qsr_world[world_qsr.qsr_type] = {}
 
 	"""remove the first frame which cannot contain a qtcb relation"""
 	if "qtcbs" in world_qsr.qsr_type:
@@ -47,61 +63,60 @@ def compute_episodes(world_qsr, episode_length_threshold):
 	for frame in frames:
 		for objs, qsrs in world_qsr.trace[frame].qsrs.items():
 			my_qsrs = {}
-			#print("h", objs, qsrs.qsr)
-
 			for qsr_key, qsr_val in qsrs.qsr.items():
-				#print("  ", qsr_key, qsr_val)
 				if qsr_key is "tpcc":
 					origin,relatum,datum = objs.split(',')
 					new_key=("%s-%s,%s") % (origin,relatum,datum)
 					try:
-						obj_based_qsr_world[new_key].append((frame, {"tpcc": qsrs.qsr["tpcc"]}))
+						obj_based_qsr_world[qsr_key][new_key].append((frame, {"tpcc": qsrs.qsr["tpcc"]}))
 					except KeyError:
-						obj_based_qsr_world[new_key] = [(frame, {"tpcc": qsrs.qsr["tpcc"]})]
+						obj_based_qsr_world[qsr_key][new_key] = [(frame, {"tpcc": qsrs.qsr["tpcc"]})]
 				else:
 					my_qsrs[qsr_key] = qsr_val
 
-			if my_qsrs != {}:
+			if split_qsrs and my_qsrs != {}:
+				for q, r in my_qsrs.items():
+					splits_up_qsrs = {q: r}
+					try:
+						obj_based_qsr_world[q][objs].append((frame, splits_up_qsrs))
+					except KeyError:
+						obj_based_qsr_world[q][objs] = [(frame, splits_up_qsrs)]
+
+			elif split_qsrs==False and my_qsrs != {}:
 				try:
-					obj_based_qsr_world[objs].append((frame, my_qsrs))
+					obj_based_qsr_world[world_qsr.qsr_type][objs].append((frame, my_qsrs))
 				except KeyError:
-					obj_based_qsr_world[objs] = [(frame, my_qsrs)]
+					obj_based_qsr_world[world_qsr.qsr_type][objs] = [(frame, my_qsrs)]
+
 
 	#print("s", obj_based_qsr_world[objs])
 	# for i in obj_based_qsr_world['Kettle_32,torso']:
 	# 	print(i)
-
 	# set a counter on the length of an episode when being created - so you can limit it.
-
-	for objs, frame_tuples in obj_based_qsr_world.items():
-		# if objs != 'Double_doors_112,torso': continue
-		epi_start, epi_rel = frame_tuples[0]
-		epi_end  = copy.copy(epi_start)
-		objects = objs.split(',')
-		counter = 0
-		for (frame, rel) in frame_tuples:
-			if episode_length_threshold == 0:
-				if rel == epi_rel:
-					epi_end = frame
+	for q, obj_based_qsrs in obj_based_qsr_world.items():
+		for objs, frame_tuples in obj_based_qsrs.items():
+			epi_start, epi_rel = frame_tuples[0]
+			epi_end  = copy.copy(epi_start)
+			objects = objs.split(',')
+			counter = 0
+			for (frame, rel) in frame_tuples:
+				if episode_length_threshold == 0:
+					if rel == epi_rel:
+						epi_end = frame
+					else:
+						episodes.append( (objects, epi_rel, (epi_start, epi_end)) )
+						epi_start = epi_end = frame
+						epi_rel = rel
 				else:
-					episodes.append( (objects, epi_rel, (epi_start, epi_end)) )
-					epi_start = epi_end = frame
-					epi_rel = rel
-			else:
-				if rel == epi_rel and counter <= episode_length_threshold:
-					epi_end = frame
-					counter+=1
-				else:
-					episodes.append( (objects, epi_rel, (epi_start, epi_end)) )
-					epi_start = epi_end = frame
-					epi_rel = rel
-					counter = 0
-
-		# if epi_end - epi_start < 4:
-		# 	print("what?", episodes)
-		# 	sys.exit(1)
-
-		episodes.append((objects, epi_rel, (epi_start, epi_end)))
+					if rel == epi_rel and counter <= episode_length_threshold:
+						epi_end = frame
+						counter+=1
+					else:
+						episodes.append( (objects, epi_rel, (epi_start, epi_end)) )
+						epi_start = epi_end = frame
+						epi_rel = rel
+						counter = 0
+			episodes.append((objects, epi_rel, (epi_start, epi_end)))
 
 	"""If any of the qsr values == ignore. Remove that episode entirely. """
 	filtered_out_ignore = []

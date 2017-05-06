@@ -29,10 +29,7 @@ class Activity_Graph:
         :type object_types: dict
         """
 
-        try:
-            self.__episodes = utils.compute_episodes(world_qsr, params["ep_max_length"])
-        except KeyError:
-            self.__episodes = utils.compute_episodes(world_qsr, 0)
+        self.__episodes = utils.compute_episodes(world_qsr, params)
         """list: The list of QSR Episodes used to generate the QSTAG."""
 
         self.__object_types = self.get_objects_types(object_types, world)
@@ -53,7 +50,7 @@ class Activity_Graph:
         self.graphlets = Graphlets(self.__episodes, params, self.__object_types, vis=vis)
         """Creates a Graphlets object containing lists of, unique graphlets, hashes and histogram of graphlets."""
 
-        # pdb.set_trace()
+        pdb.set_trace()
 
     @property
     def episodes(self):
