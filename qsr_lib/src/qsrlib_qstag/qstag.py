@@ -50,7 +50,7 @@ class Activity_Graph:
         self.graphlets = Graphlets(self.__episodes, params, self.__object_types, vis=vis)
         """Creates a Graphlets object containing lists of, unique graphlets, hashes and histogram of graphlets."""
 
-        pdb.set_trace()
+        # pdb.set_trace()
 
     @property
     def episodes(self):
